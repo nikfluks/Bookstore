@@ -1,6 +1,6 @@
-﻿namespace Bookstore.API
+﻿namespace Bookstore.API.Extensions
 {
-    public static class ServiceCollectionExtensions
+    public static class DependencyInjection
     {
         public static IServiceCollection AddServices(this IServiceCollection services)
         {

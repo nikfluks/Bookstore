@@ -1,4 +1,4 @@
-using Bookstore.API;
+using Bookstore.API.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
