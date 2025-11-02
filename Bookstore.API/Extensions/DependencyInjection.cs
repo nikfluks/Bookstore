@@ -2,7 +2,7 @@
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddServices(this IServiceCollection services)
+        public static IServiceCollection AddApiServices(this IServiceCollection services)
         {
             services.AddControllers();
 

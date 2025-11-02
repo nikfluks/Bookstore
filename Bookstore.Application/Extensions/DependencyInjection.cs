@@ -1,6 +1,16 @@
-﻿namespace Bookstore.Application.Extensions
+﻿using Bookstore.Application.Interfaces;
+using Bookstore.Application.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Bookstore.Application.Extensions
 {
-    public class DependencyInjection
+    public static class DependencyInjection
     {
+        public static IServiceCollection AddAppServices(this IServiceCollection services)
+        {
+            services.AddScoped<IBookService, BookService>();
+
+            return services;
+        }
     }
 }
