@@ -35,7 +35,7 @@ namespace Bookstore.API.Controllers
         public async Task<ActionResult<BookResponse>> Create(BookCreateRequest bookCreate)
         {
             var result = await _bookService.CreateAsync(bookCreate);
-            return CreatedAtAction(nameof(Create), new { id = result.Id }, result);
+            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 
         [HttpPut("{id}")]
