@@ -1,4 +1,4 @@
 namespace Bookstore.Application.Models
 {
-    public record AuthorUpdateRequest(int Id, string Name, int BirthYear);
+    public record AuthorUpdateRequest(string Name, int BirthYear);
 }

@@ -48,12 +48,7 @@ namespace Bookstore.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, ReviewUpdateRequest reviewUpdate)
         {
-            if (id != reviewUpdate.Id)
-            {
-                return BadRequest();
-            }
-
-            var result = await _reviewService.UpdateAsync(reviewUpdate);
+            var result = await _reviewService.UpdateAsync(id, reviewUpdate);
             return result is null
                 ? BadRequest()
                 : Ok(result);

@@ -16,14 +16,21 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<BookResponse>>> GetAll()
+        public async Task<ActionResult<IEnumerable<BookDetailedResponse>>> GetAllDetailed()
         {
-            var result = await _bookService.GetAllAsync();
+            var result = await _bookService.GetAllDetailedAsync();
+            return Ok(result);
+        }
+
+        [HttpGet("top-10")]
+        public async Task<ActionResult<IEnumerable<BookDetailedResponse>>> GetTop10ByRating()
+        {
+            var result = await _bookService.GetTop10ByRatingAsync();
             return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<BookResponse>> GetById(int id)
+        public async Task<ActionResult<BookDetailedResponse>> GetById(int id)
         {
             var result = await _bookService.GetByIdAsync(id);
             return result is null
@@ -32,21 +39,16 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<BookResponse>> Create(BookCreateRequest bookCreate)
+        public async Task<ActionResult<BookDetailedResponse>> Create(BookCreateRequest bookCreate)
         {
             var result = await _bookService.CreateAsync(bookCreate);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, BookUpdateRequest bookUpdate)
+        public async Task<IActionResult> Update(int id, BookPriceUpdateRequest priceUpdate)
         {
-            if (id != bookUpdate.Id)
-            {
-                return BadRequest();
-            }
-
-            var result = await _bookService.UpdateAsync(bookUpdate);
+            var result = await _bookService.UpdateAsync(id, priceUpdate);
             return result is null
                 ? BadRequest()
                 : Ok(result);
@@ -58,6 +60,24 @@ namespace Bookstore.API.Controllers
             return await _bookService.DeleteAsync(id)
                 ? NoContent()
                 : BadRequest();
+        }
+
+        [HttpPut("{id}/authors")]
+        public async Task<IActionResult> UpdateAuthors(int id, BookAuthorsUpdateRequest authorsUpdate)
+        {
+            var result = await _bookService.UpdateAuthorsAsync(id, authorsUpdate);
+            return result is null
+                ? NotFound()
+                : Ok(result);
+        }
+
+        [HttpPut("{id}/genres")]
+        public async Task<IActionResult> UpdateGenres(int id, BookGenresUpdateRequest genresUpdate)
+        {
+            var result = await _bookService.UpdateGenresAsync(id, genresUpdate);
+            return result is null
+                ? NotFound()
+                : Ok(result);
         }
     }
 }

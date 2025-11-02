@@ -43,9 +43,9 @@ namespace Bookstore.Application.Services
             return new AuthorResponse(author.Id, author.Name, author.BirthYear);
         }
 
-        public async Task<AuthorResponse?> UpdateAsync(AuthorUpdateRequest authorUpdate)
+        public async Task<AuthorResponse?> UpdateAsync(int id, AuthorUpdateRequest authorUpdate)
         {
-            var author = await db.Authors.FindAsync(authorUpdate.Id);
+            var author = await db.Authors.FindAsync(id);
             if (author is null) return null;
 
             author.Name = authorUpdate.Name;

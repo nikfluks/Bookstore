@@ -42,9 +42,9 @@ namespace Bookstore.Application.Services
             return new GenreResponse(genre.Id, genre.Name);
         }
 
-        public async Task<GenreResponse?> UpdateAsync(GenreUpdateRequest genreUpdate)
+        public async Task<GenreResponse?> UpdateAsync(int id, GenreUpdateRequest genreUpdate)
         {
-            var genre = await db.Genres.FindAsync(genreUpdate.Id);
+            var genre = await db.Genres.FindAsync(id);
             if (genre is null) return null;
 
             genre.Name = genreUpdate.Name;

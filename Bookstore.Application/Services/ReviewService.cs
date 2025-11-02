@@ -54,11 +54,11 @@ namespace Bookstore.Application.Services
             return new ReviewResponse(review.Id, review.Description, review.Rating, book.Title);
         }
 
-        public async Task<ReviewResponse?> UpdateAsync(ReviewUpdateRequest reviewUpdate)
+        public async Task<ReviewResponse?> UpdateAsync(int id, ReviewUpdateRequest reviewUpdate)
         {
             var review = await db.Reviews
                 .Include(r => r.Book)
-                .FirstOrDefaultAsync(r => r.Id == reviewUpdate.Id);
+                .FirstOrDefaultAsync(r => r.Id == id);
 
             if (review is null) return null;
 

@@ -7,7 +7,7 @@ namespace Bookstore.Application.Interfaces
         Task<IEnumerable<AuthorResponse>> GetAllAsync();
         Task<AuthorResponse?> GetByIdAsync(int id);
         Task<AuthorResponse> CreateAsync(AuthorCreateRequest authorCreate);
-        Task<AuthorResponse?> UpdateAsync(AuthorUpdateRequest authorUpdate);
+        Task<AuthorResponse?> UpdateAsync(int id, AuthorUpdateRequest authorUpdate);
         Task<bool> DeleteAsync(int id);
     }
 }
