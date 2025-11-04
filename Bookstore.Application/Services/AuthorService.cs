@@ -1,13 +1,12 @@
 using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models;
 using Bookstore.Domain.Entities;
-using Bookstore.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Bookstore.Application.Services
 {
-    internal class AuthorService(AppDbContext db, ILogger<AuthorService> logger) : IAuthorService
+    internal class AuthorService(IAppDbContext db, ILogger<AuthorService> logger) : IAuthorService
     {
         public async Task<IEnumerable<AuthorResponse>> GetAllAsync()
         {

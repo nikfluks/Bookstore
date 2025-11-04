@@ -1,13 +1,12 @@
 ﻿using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models;
 using Bookstore.Domain.Entities;
-using Bookstore.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Bookstore.Application.Services
 {
-    internal class BookService(AppDbContext db, ILogger<BookService> logger) : IBookService
+    internal class BookService(IAppDbContext db, ILogger<BookService> logger) : IBookService
     {
         public async Task<IEnumerable<BookDetailedResponse>> GetAllDetailedAsync()
         {

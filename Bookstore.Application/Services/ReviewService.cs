@@ -1,13 +1,12 @@
 using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models;
 using Bookstore.Domain.Entities;
-using Bookstore.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Bookstore.Application.Services
 {
-    internal class ReviewService(AppDbContext db, ILogger<ReviewService> logger) : IReviewService
+    internal class ReviewService(IAppDbContext db, ILogger<ReviewService> logger) : IReviewService
     {
         public async Task<IEnumerable<ReviewResponse>> GetAllAsync()
         {

@@ -1,13 +1,12 @@
 using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models;
 using Bookstore.Domain.Entities;
-using Bookstore.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Bookstore.Application.Services
 {
-    internal class GenreService(AppDbContext db, ILogger<GenreService> logger) : IGenreService
+    internal class GenreService(IAppDbContext db, ILogger<GenreService> logger) : IGenreService
     {
         public async Task<IEnumerable<GenreResponse>> GetAllAsync()
         {

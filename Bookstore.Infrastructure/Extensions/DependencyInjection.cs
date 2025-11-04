@@ -1,4 +1,5 @@
-﻿using Bookstore.Infrastructure.Database;
+﻿using Bookstore.Application.Interfaces;
+using Bookstore.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +15,8 @@ namespace Bookstore.Infrastructure.Extensions
                 options.UseSqlServer(
                     configuration.GetConnectionString("BookstoreDB"));
             });
+
+            services.AddScoped<IAppDbContext, AppDbContext>();
 
             return services;
         }
