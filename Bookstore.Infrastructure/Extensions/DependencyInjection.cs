@@ -10,7 +10,10 @@ namespace Bookstore.Infrastructure.Extensions
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddDbContext<AppDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("BookstoreDB")));
+            {
+                options.UseSqlServer(
+                    configuration.GetConnectionString("BookstoreDB"));
+            });
 
             return services;
         }

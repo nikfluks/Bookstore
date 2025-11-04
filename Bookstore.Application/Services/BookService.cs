@@ -3,38 +3,46 @@ using Bookstore.Application.Models;
 using Bookstore.Domain.Entities;
 using Bookstore.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Bookstore.Application.Services
 {
-    internal class BookService : IBookService
+    internal class BookService(AppDbContext db, ILogger<BookService> logger) : IBookService
     {
-        private readonly AppDbContext db;
-
-        public BookService(AppDbContext db)
-        {
-            this.db = db;
-        }
-
         public async Task<IEnumerable<BookDetailedResponse>> GetAllDetailedAsync()
         {
-            return await db.Books
-                .Include(b => b.Authors)
-                .Include(b => b.Genres)
-                .Include(b => b.Reviews)
-                .Select(b => new BookDetailedResponse(
-                    b.Id,
-                    b.Title,
-                    b.Authors.Select(a => a.Name).ToList(),
-                    b.Genres.Select(g => g.Name).ToList(),
-                    b.Reviews.Any() ? Math.Round(b.Reviews.Average(r => r.Rating), 2) : 0
-                ))
-                .ToListAsync();
+            logger.LogInformation("Retrieving all books");
+
+            try
+            {
+                var books = await db.Books
+                    .Select(b => new BookDetailedResponse(
+                        b.Id,
+                        b.Title,
+                        b.Authors.Select(a => a.Name).ToList(),
+                        b.Genres.Select(g => g.Name).ToList(),
+                        b.Reviews.Count > 0 ? Math.Round(b.Reviews.Average(r => r.Rating), 2) : 0
+                    ))
+                    .ToListAsync();
+
+                logger.LogInformation("Retrieved {BookCount} books", books.Count);
+                return books;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving all books");
+                throw;
+            }
         }
 
         public async Task<IEnumerable<BookDetailedResponse>> GetTop10ByRatingAsync()
         {
-            #region Raw query
-            var sql = @"
+            logger.LogInformation("Retrieving top 10 books by rating");
+
+            try
+            {
+                #region Raw query
+                var sql = @"
                 WITH BookRatings AS (
 	                SELECT TOP 10
 		                b.Id,
@@ -73,193 +81,305 @@ namespace Bookstore.Application.Services
                 LEFT JOIN BookAuthors ba ON b.Id = ba.BooksId
                 LEFT JOIN BookGenres bg ON b.Id = bg.BooksId
                 ORDER BY br.AverageRating DESC";
-            #endregion
+                #endregion
 
-            var results = await db.Database
-                .SqlQueryRaw<BookDetailedResponseQuery>(sql)
-                .ToListAsync();
+                var results = await db.Database
+                    .SqlQueryRaw<BookDetailedResponseQuery>(sql)
+                    .ToListAsync();
 
-            return results.Select(r => new BookDetailedResponse(
-                r.Id,
-                r.Title,
-                string.IsNullOrEmpty(r.AuthorNames)
-                    ? new List<string>()
-                    : r.AuthorNames.Split(',').ToList(),
-                string.IsNullOrEmpty(r.GenreNames)
-                    ? new List<string>()
-                    : r.GenreNames.Split(',').ToList(),
-                Math.Round(r.AverageRating, 2)
-            )).ToList();
+                var books = results.Select(r => new BookDetailedResponse(
+                    r.Id,
+                    r.Title,
+                    string.IsNullOrEmpty(r.AuthorNames)
+                        ? new List<string>()
+                        : r.AuthorNames.Split(',').ToList(),
+                    string.IsNullOrEmpty(r.GenreNames)
+                        ? new List<string>()
+                        : r.GenreNames.Split(',').ToList(),
+                    Math.Round(r.AverageRating, 2)
+                )).ToList();
+
+                logger.LogInformation("Retrieved top {BookCount} books by rating", books.Count);
+                return books;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving top 10 books by rating");
+                throw;
+            }
         }
 
         public async Task<BookDetailedResponse?> GetByIdAsync(int id)
         {
-            var book = await db.Books
-                .Include(b => b.Authors)
-                .Include(b => b.Genres)
-                .Include(b => b.Reviews)
-                .FirstOrDefaultAsync(b => b.Id == id);
+            logger.LogInformation("Retrieving book with Id: {BookId}", id);
 
-            return book is null
-                ? null
-                : new BookDetailedResponse(
-                    book.Id,
-                    book.Title,
-                    book.Authors.Select(a => a.Name).ToList(),
-                    book.Genres.Select(g => g.Name).ToList(),
-                    book.Reviews.Any() ? Math.Round(book.Reviews.Average(r => r.Rating), 2) : 0
-                );
+            try
+            {
+                var book = await db.Books
+                    .Where(b => b.Id == id)
+                    .Select(b => new BookDetailedResponse(
+                        b.Id,
+                        b.Title,
+                        b.Authors.Select(a => a.Name).ToList(),
+                        b.Genres.Select(g => g.Name).ToList(),
+                        b.Reviews.Count > 0 ? Math.Round(b.Reviews.Average(r => r.Rating), 2) : 0
+                    ))
+                    .FirstOrDefaultAsync();
+
+                if (book is null)
+                {
+                    logger.LogWarning("Book with Id: {BookId} not found", id);
+                    return null;
+                }
+
+                logger.LogInformation("Successfully retrieved book with Id: {BookId}", id);
+                return book;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving book with Id: {BookId}", id);
+                throw;
+            }
         }
 
         public async Task<BookDetailedResponse> CreateAsync(BookCreateRequest bookCreate)
         {
-            var book = new Book
-            {
-                Title = bookCreate.Title,
-                Price = bookCreate.Price
-            };
+            logger.LogInformation("Creating new book: {BookTitle}", bookCreate.Title);
 
-            if (bookCreate.AuthorIds is not null && bookCreate.AuthorIds.Count > 0)
+            try
             {
-                var authors = await db.Authors
-                    .Where(a => bookCreate.AuthorIds.Contains(a.Id))
-                    .ToListAsync();
-
-                foreach (var author in authors)
+                var book = new Book
                 {
-                    book.Authors.Add(author);
-                }
-            }
+                    Title = bookCreate.Title,
+                    Price = bookCreate.Price
+                };
 
-            if (bookCreate.GenreIds is not null && bookCreate.GenreIds.Count > 0)
-            {
-                var genres = await db.Genres
-                    .Where(g => bookCreate.GenreIds.Contains(g.Id))
-                    .ToListAsync();
-
-                foreach (var genre in genres)
+                if (bookCreate.AuthorIds is not null && bookCreate.AuthorIds.Count > 0)
                 {
-                    book.Genres.Add(genre);
+                    var authors = await db.Authors
+                        .Where(a => bookCreate.AuthorIds.Contains(a.Id))
+                        .ToListAsync();
+
+                    foreach (var author in authors)
+                    {
+                        book.Authors.Add(author);
+                    }
                 }
+
+                if (bookCreate.GenreIds is not null && bookCreate.GenreIds.Count > 0)
+                {
+                    var genres = await db.Genres
+                        .Where(g => bookCreate.GenreIds.Contains(g.Id))
+                        .ToListAsync();
+
+                    foreach (var genre in genres)
+                    {
+                        book.Genres.Add(genre);
+                    }
+                }
+
+                db.Books.Add(book);
+                await db.SaveChangesAsync();
+
+                var createdBook = await db.Books
+                    .Where(b => b.Id == book.Id)
+                    .Select(b => new BookDetailedResponse(
+                        b.Id,
+                        b.Title,
+                        b.Authors.Select(a => a.Name).ToList(),
+                        b.Genres.Select(g => g.Name).ToList(),
+                        b.Reviews.Count > 0 ? Math.Round(b.Reviews.Average(r => r.Rating), 2) : 0
+                    ))
+                    .FirstAsync();
+
+                logger.LogInformation("Successfully created book with Id: {BookId}", book.Id);
+                return createdBook;
             }
-
-            db.Books.Add(book);
-            await db.SaveChangesAsync();
-
-            var createdBook = await db.Books
-                .Include(b => b.Authors)
-                .Include(b => b.Genres)
-                .Include(b => b.Reviews)
-                .FirstAsync(b => b.Id == book.Id);
-
-            return new BookDetailedResponse(
-                createdBook.Id,
-                createdBook.Title,
-                createdBook.Authors.Select(a => a.Name).ToList(),
-                createdBook.Genres.Select(g => g.Name).ToList(),
-                createdBook.Reviews.Any() ? Math.Round(createdBook.Reviews.Average(r => r.Rating), 2) : 0
-            );
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error creating book: {BookTitle}", bookCreate.Title);
+                throw;
+            }
         }
 
         public async Task<BookDetailedResponse?> UpdateAsync(int id, BookPriceUpdateRequest priceUpdate)
         {
-            var book = await db.Books
-                .Include(b => b.Authors)
-                .Include(b => b.Genres)
-                .Include(b => b.Reviews)
-                .FirstOrDefaultAsync(b => b.Id == id);
+            logger.LogInformation("Updating price for book Id: {BookId}", id);
 
-            if (book is null) return null;
+            try
+            {
+                var book = await db.Books
+                    .FirstOrDefaultAsync(b => b.Id == id);
 
-            book.Price = priceUpdate.Price;
-            await db.SaveChangesAsync();
+                if (book is null)
+                {
+                    logger.LogWarning("Cannot update - Book with Id: {BookId} not found", id);
+                    return null;
+                }
 
-            return new BookDetailedResponse(
-                book.Id,
-                book.Title,
-                book.Authors.Select(a => a.Name).ToList(),
-                book.Genres.Select(g => g.Name).ToList(),
-                book.Reviews.Any() ? Math.Round(book.Reviews.Average(r => r.Rating), 2) : 0
-            );
+                var oldPrice = book.Price;
+                book.Price = priceUpdate.Price;
+                await db.SaveChangesAsync();
+
+                logger.LogInformation("Updated book price. BookId: {BookId}, OldPrice: {OldPrice}, NewPrice: {NewPrice}",
+                    id, oldPrice, priceUpdate.Price);
+
+                var updatedBook = await db.Books
+                    .Where(b => b.Id == id)
+                    .Select(b => new BookDetailedResponse(
+                        b.Id,
+                        b.Title,
+                        b.Authors.Select(a => a.Name).ToList(),
+                        b.Genres.Select(g => g.Name).ToList(),
+                        b.Reviews.Count > 0 ? Math.Round(b.Reviews.Average(r => r.Rating), 2) : 0
+                    ))
+                    .FirstAsync();
+
+                return updatedBook;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error updating book with Id: {BookId}", id);
+                throw;
+            }
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var book = await db.Books.FindAsync(id);
-            if (book is null) return false;
+            logger.LogInformation("Attempting to delete book with Id: {BookId}", id);
 
-            db.Books.Remove(book);
-            return await db.SaveChangesAsync() > 0;
+            try
+            {
+                var book = await db.Books.FindAsync(id);
+                if (book is null)
+                {
+                    logger.LogWarning("Cannot delete - Book with Id: {BookId} not found", id);
+                    return false;
+                }
+
+                db.Books.Remove(book);
+                var deleted = await db.SaveChangesAsync() > 0;
+
+                if (deleted)
+                {
+                    logger.LogInformation("Successfully deleted book with Id: {BookId}", id);
+                }
+
+                return deleted;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error deleting book with Id: {BookId}", id);
+                throw;
+            }
         }
 
         public async Task<BookDetailedResponse?> UpdateAuthorsAsync(int id, BookAuthorsUpdateRequest authorsUpdate)
         {
-            var book = await db.Books
-                .Include(b => b.Authors)
-                .Include(b => b.Genres)
-                .Include(b => b.Reviews)
-                .FirstOrDefaultAsync(b => b.Id == id);
+            logger.LogInformation("Updating authors for book Id: {BookId}", id);
 
-            if (book is null) return null;
-
-            book.Authors.Clear();
-
-            if (authorsUpdate.AuthorIds.Count > 0)
+            try
             {
-                var authors = await db.Authors
-                    .Where(a => authorsUpdate.AuthorIds.Contains(a.Id))
-                    .ToListAsync();
+                var book = await db.Books
+                    .Include(b => b.Authors)
+                    .FirstOrDefaultAsync(b => b.Id == id);
 
-                foreach (var author in authors)
+                if (book is null)
                 {
-                    book.Authors.Add(author);
+                    logger.LogWarning("Cannot update authors - Book with Id: {BookId} not found", id);
+                    return null;
                 }
+
+                book.Authors.Clear();
+
+                if (authorsUpdate.AuthorIds.Count > 0)
+                {
+                    var authors = await db.Authors
+                        .Where(a => authorsUpdate.AuthorIds.Contains(a.Id))
+                        .ToListAsync();
+
+                    foreach (var author in authors)
+                    {
+                        book.Authors.Add(author);
+                    }
+                }
+
+                await db.SaveChangesAsync();
+
+                logger.LogInformation("Successfully updated authors for book Id: {BookId}", id);
+
+                var updatedBook = await db.Books
+                    .Where(b => b.Id == id)
+                    .Select(b => new BookDetailedResponse(
+                        b.Id,
+                        b.Title,
+                        b.Authors.Select(a => a.Name).ToList(),
+                        b.Genres.Select(g => g.Name).ToList(),
+                        b.Reviews.Count > 0 ? Math.Round(b.Reviews.Average(r => r.Rating), 2) : 0
+                    ))
+                    .FirstAsync();
+
+                return updatedBook;
             }
-
-            await db.SaveChangesAsync();
-
-            return new BookDetailedResponse(
-                book.Id,
-                book.Title,
-                book.Authors.Select(a => a.Name).ToList(),
-                book.Genres.Select(g => g.Name).ToList(),
-                book.Reviews.Any() ? Math.Round(book.Reviews.Average(r => r.Rating), 2) : 0
-            );
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error updating authors for book Id: {BookId}", id);
+                throw;
+            }
         }
 
         public async Task<BookDetailedResponse?> UpdateGenresAsync(int id, BookGenresUpdateRequest genresUpdate)
         {
-            var book = await db.Books
-                .Include(b => b.Authors)
-                .Include(b => b.Genres)
-                .Include(b => b.Reviews)
-                .FirstOrDefaultAsync(b => b.Id == id);
+            logger.LogInformation("Updating genres for book Id: {BookId}", id);
 
-            if (book is null) return null;
-
-            book.Genres.Clear();
-
-            if (genresUpdate.GenreIds.Count > 0)
+            try
             {
-                var genres = await db.Genres
-                    .Where(g => genresUpdate.GenreIds.Contains(g.Id))
-                    .ToListAsync();
+                var book = await db.Books
+                    .Include(b => b.Genres)
+                    .FirstOrDefaultAsync(b => b.Id == id);
 
-                foreach (var genre in genres)
+                if (book is null)
                 {
-                    book.Genres.Add(genre);
+                    logger.LogWarning("Cannot update genres - Book with Id: {BookId} not found", id);
+                    return null;
                 }
+
+                book.Genres.Clear();
+
+                if (genresUpdate.GenreIds.Count > 0)
+                {
+                    var genres = await db.Genres
+                        .Where(g => genresUpdate.GenreIds.Contains(g.Id))
+                        .ToListAsync();
+
+                    foreach (var genre in genres)
+                    {
+                        book.Genres.Add(genre);
+                    }
+                }
+
+                await db.SaveChangesAsync();
+
+                logger.LogInformation("Successfully updated genres for book Id: {BookId}", id);
+
+                var updatedBook = await db.Books
+                    .Where(b => b.Id == id)
+                    .Select(b => new BookDetailedResponse(
+                        b.Id,
+                        b.Title,
+                        b.Authors.Select(a => a.Name).ToList(),
+                        b.Genres.Select(g => g.Name).ToList(),
+                        b.Reviews.Count > 0 ? Math.Round(b.Reviews.Average(r => r.Rating), 2) : 0
+                    ))
+                    .FirstAsync();
+
+                return updatedBook;
             }
-
-            await db.SaveChangesAsync();
-
-            return new BookDetailedResponse(
-                book.Id,
-                book.Title,
-                book.Authors.Select(a => a.Name).ToList(),
-                book.Genres.Select(g => g.Name).ToList(),
-                book.Reviews.Any() ? Math.Round(book.Reviews.Average(r => r.Rating), 2) : 0
-            );
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error updating genres for book Id: {BookId}", id);
+                throw;
+            }
         }
     }
 }
