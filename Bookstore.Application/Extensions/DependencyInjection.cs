@@ -13,6 +13,9 @@ namespace Bookstore.Application.Extensions
             services.AddScoped<IGenreService, GenreService>();
             services.AddScoped<IReviewService, ReviewService>();
 
+            services.AddScoped<IBookImportService, BookImportService>();
+            services.AddSingleton<IThirdPartyBookApiService, ThirdPartyBookApiService>();
+
             return services;
         }
     }

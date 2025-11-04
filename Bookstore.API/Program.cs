@@ -33,6 +33,7 @@ try
     builder.Services.AddProblemDetails();
 
     builder.Services.AddApiServices();
+    builder.Services.AddQuartzScheduling();
     builder.Services.AddAppServices();
     builder.Services.AddInfrastructure(builder.Configuration);
 
