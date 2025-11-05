@@ -33,6 +33,7 @@ try
     builder.Services.AddProblemDetails();
 
     builder.Services.AddApiServices();
+    builder.Services.AddJwtAuthentication(builder.Configuration);
     builder.Services.AddQuartzScheduling();
     builder.Services.AddAppServices();
     builder.Services.AddInfrastructure(builder.Configuration);
@@ -52,7 +53,10 @@ try
     }
 
     app.UseHttpsRedirection();
+
+    app.UseAuthentication();
     app.UseAuthorization();
+
     app.MapControllers();
 
     Log.Information("Bookstore API started successfully");

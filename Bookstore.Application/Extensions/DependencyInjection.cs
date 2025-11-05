@@ -8,6 +8,8 @@ namespace Bookstore.Application.Extensions
     {
         public static IServiceCollection AddAppServices(this IServiceCollection services)
         {
+            services.AddScoped<IAuthService, AuthService>();
+
             services.AddScoped<IBookService, BookService>();
             services.AddScoped<IAuthorService, AuthorService>();
             services.AddScoped<IGenreService, GenreService>();

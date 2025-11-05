@@ -1,14 +1,18 @@
 ﻿using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models;
+using Bookstore.Application.Constants;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bookstore.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class BooksController(IBookService bookService) : ControllerBase
     {
         [HttpGet]
+        [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
         public async Task<ActionResult<IEnumerable<BookDetailedResponse>>> GetAllDetailed()
         {
             var result = await bookService.GetAllDetailedAsync();
@@ -16,6 +20,7 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpGet("top-10")]
+        [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
         public async Task<ActionResult<IEnumerable<BookDetailedResponse>>> GetTop10ByRating()
         {
             var result = await bookService.GetTop10ByRatingAsync();
@@ -23,6 +28,7 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
         public async Task<ActionResult<BookDetailedResponse>> GetById(int id)
         {
             var result = await bookService.GetByIdAsync(id);
@@ -32,6 +38,7 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = Roles.ReadWrite)]
         public async Task<ActionResult<BookDetailedResponse>> Create(BookCreateRequest bookCreate)
         {
             var result = await bookService.CreateAsync(bookCreate);
@@ -39,6 +46,7 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = Roles.ReadWrite)]
         public async Task<IActionResult> Update(int id, BookPriceUpdateRequest priceUpdate)
         {
             var result = await bookService.UpdateAsync(id, priceUpdate);
@@ -48,6 +56,7 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = Roles.ReadWrite)]
         public async Task<IActionResult> Delete(int id)
         {
             return await bookService.DeleteAsync(id)
@@ -56,6 +65,7 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpPut("{id}/authors")]
+        [Authorize(Roles = Roles.ReadWrite)]
         public async Task<IActionResult> UpdateAuthors(int id, BookAuthorsUpdateRequest authorsUpdate)
         {
             var result = await bookService.UpdateAuthorsAsync(id, authorsUpdate);
@@ -65,6 +75,7 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpPut("{id}/genres")]
+        [Authorize(Roles = Roles.ReadWrite)]
         public async Task<IActionResult> UpdateGenres(int id, BookGenresUpdateRequest genresUpdate)
         {
             var result = await bookService.UpdateGenresAsync(id, genresUpdate);

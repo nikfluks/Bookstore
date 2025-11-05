@@ -1,14 +1,18 @@
 using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models;
+using Bookstore.Application.Constants;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bookstore.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class GenresController(IGenreService genreService) : ControllerBase
     {
         [HttpGet]
+        [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
         public async Task<ActionResult<IEnumerable<GenreResponse>>> GetAll()
         {
             var result = await genreService.GetAllAsync();
@@ -16,6 +20,7 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
         public async Task<ActionResult<GenreResponse>> GetById(int id)
         {
             var result = await genreService.GetByIdAsync(id);
@@ -25,6 +30,7 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = Roles.ReadWrite)]
         public async Task<ActionResult<GenreResponse>> Create(GenreCreateRequest genreCreate)
         {
             var result = await genreService.CreateAsync(genreCreate);
@@ -32,6 +38,7 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = Roles.ReadWrite)]
         public async Task<IActionResult> Update(int id, GenreUpdateRequest genreUpdate)
         {
             var result = await genreService.UpdateAsync(id, genreUpdate);
@@ -41,6 +48,7 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = Roles.ReadWrite)]
         public async Task<IActionResult> Delete(int id)
         {
             return await genreService.DeleteAsync(id)

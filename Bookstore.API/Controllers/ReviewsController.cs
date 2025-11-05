@@ -1,14 +1,18 @@
 using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models;
+using Bookstore.Application.Constants;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bookstore.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ReviewsController(IReviewService reviewService) : ControllerBase
     {
         [HttpGet]
+        [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
         public async Task<ActionResult<IEnumerable<ReviewResponse>>> GetAll()
         {
             var result = await reviewService.GetAllAsync();
@@ -16,6 +20,7 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
         public async Task<ActionResult<ReviewResponse>> GetById(int id)
         {
             var result = await reviewService.GetByIdAsync(id);
@@ -25,6 +30,7 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = Roles.ReadWrite)]
         public async Task<ActionResult<ReviewResponse>> Create(ReviewCreateRequest reviewCreate)
         {
             try
@@ -39,6 +45,7 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = Roles.ReadWrite)]
         public async Task<IActionResult> Update(int id, ReviewUpdateRequest reviewUpdate)
         {
             var result = await reviewService.UpdateAsync(id, reviewUpdate);
@@ -48,6 +55,7 @@ namespace Bookstore.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = Roles.ReadWrite)]
         public async Task<IActionResult> Delete(int id)
         {
             return await reviewService.DeleteAsync(id)
