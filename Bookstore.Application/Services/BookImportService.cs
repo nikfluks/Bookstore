@@ -10,6 +10,16 @@ namespace Bookstore.Application.Services
         IThirdPartyBookApiService thirdPartyApi,
         ILogger<BookImportService> logger) : IBookImportService
     {
+        /// <summary>
+        /// Current implementation: Exact match only (exact match, case-insensitive, trimmed)
+        /// Attempted solution for typos: FuzzySharp library
+        /// Issue: Performance bottleneck when processing 100,000+ books
+        /// Example FuzzySharp usage (currently too slow for publishing):
+        /// var threshold = 85;
+        /// var matches = existingTitles.Where(existingTitle =>
+        ///    Fuzz.Ratio(existingTitle, importTitle.Trim().ToLower()) >= threshold);
+        /// </summary>
+        /// <returns></returns>
         public async Task<int> ImportBooksAsync()
         {
             logger.LogInformation("Starting book import process...");
