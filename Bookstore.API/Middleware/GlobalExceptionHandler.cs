@@ -10,24 +10,36 @@ namespace Bookstore.API.Middleware
             Exception exception,
             CancellationToken cancellationToken)
         {
+            // log, send email, etc.
+
             var isDevelopment = httpContext.RequestServices
                 .GetRequiredService<IHostEnvironment>()
                 .IsDevelopment();
 
-            var problemDetails = new ProblemDetails
+            var problemDetails = exception switch
             {
-                Status = StatusCodes.Status500InternalServerError,
-                Title = "An error occurred while processing your request.",
-                Type = "https://tools.ietf.org/html/rfc9110#section-15.6.1",
-                Detail = isDevelopment ? exception.ToString() : "An internal server error occurred",
-                Instance = httpContext.Request.Path,
-                Extensions =
+                ArgumentNullException argNullEx => new ProblemDetails
                 {
-                    ["traceId"] = httpContext.TraceIdentifier
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Bad Request - Input was null",
+                    Type = "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+                    Detail = isDevelopment ? argNullEx.ToString() : "A required parameter was not provided",
+                    Instance = $"{httpContext.Request.Method} {httpContext.Request.Path}",
+                    Extensions = { ["traceId"] = httpContext.TraceIdentifier }
+                },
+                // Add more specific exception types as needed...
+                _ => new ProblemDetails
+                {
+                    Status = StatusCodes.Status500InternalServerError,
+                    Title = "An error occurred while processing your request.",
+                    Type = "https://tools.ietf.org/html/rfc9110#section-15.6.1",
+                    Detail = isDevelopment ? exception.ToString() : "An internal server error occurred",
+                    Instance = $"{httpContext.Request.Method} {httpContext.Request.Path}",
+                    Extensions = { ["traceId"] = httpContext.TraceIdentifier }
                 }
             };
 
-            httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            httpContext.Response.StatusCode = problemDetails.Status!.Value;
             await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
 
             return true;
