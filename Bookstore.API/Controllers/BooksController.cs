@@ -1,6 +1,6 @@
-﻿using Bookstore.Application.Interfaces;
+﻿using Bookstore.Application.Constants;
+using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models;
-using Bookstore.Application.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

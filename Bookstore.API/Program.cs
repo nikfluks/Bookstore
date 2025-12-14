@@ -1,5 +1,4 @@
 using Bookstore.API.Extensions;
-using Bookstore.API.Middleware;
 using Bookstore.Application.Extensions;
 using Bookstore.Infrastructure.Extensions;
 using Serilog;
@@ -28,9 +27,6 @@ try
                 .Enrich.WithEnvironmentName();
         }
     });
-
-    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-    builder.Services.AddProblemDetails();
 
     builder.Services.AddApiServices();
     builder.Services.AddJwtAuthentication(builder.Configuration);

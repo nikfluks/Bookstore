@@ -1,4 +1,5 @@
 ﻿using Bookstore.API.Jobs;
+using Bookstore.API.Middleware;
 using Bookstore.Application.Models.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
@@ -50,6 +51,9 @@ namespace Bookstore.API.Extensions
                     }
                 });
             });
+
+            services.AddExceptionHandler<GlobalExceptionHandler>();
+            services.AddProblemDetails();
 
             return services;
         }
