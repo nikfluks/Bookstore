@@ -103,8 +103,8 @@ namespace Bookstore.API.Extensions
                 q.AddTrigger(opts => opts
                    .ForJob(jobKey)
                    .WithIdentity($"{jobKey.Name}-trigger")
-                   .WithCronSchedule("0 0 * * * ?") // every hour, every day
-                   .WithDescription("Runs book import every hour"));
+                   .WithCronSchedule("0 0 * * * ?")
+                   .WithDescription("Runs book import every hour, every day"));
             });
 
             services.AddQuartzHostedService(options =>

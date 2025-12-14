@@ -16,16 +16,7 @@ try
     builder.Host.UseSerilog((context, services, configuration) =>
     {
         configuration
-            .ReadFrom.Configuration(context.Configuration)
-            .Enrich.FromLogContext();
-
-        if (!context.HostingEnvironment.IsDevelopment())
-        {
-            configuration
-                .Enrich.WithMachineName()
-                .Enrich.WithThreadId()
-                .Enrich.WithEnvironmentName();
-        }
+            .ReadFrom.Configuration(context.Configuration);
     });
 
     builder.Services.AddApiServices();
