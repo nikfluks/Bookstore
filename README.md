@@ -4,7 +4,7 @@ A RESTful API for managing a bookstore, providing a complete CRUD API for books,
 
 ## Solution Overview
 
-This solution is built with .NET 9 and  follows Clean Architecture principles.
+This solution is built with .NET 9 and follows Clean Architecture principles.
 It provides JWT-based authentication and authorization as well as comprehensive logging.
 There is also scheduled data import functionality and unit and integrations tests.
 
@@ -19,9 +19,10 @@ There is also scheduled data import functionality and unit and integrations test
 
 1. Clone the repository
 2. Update the connection string in `appsettings.Development.json` if necessary
-3. Run database migrations: `dotnet ef database update --project Bookstore.Infrastructure --startup-project Bookstore.API`
-4. Start the application: `dotnet run --project Bookstore.API` or in VS: select Debug configuration with https profile and F5
-5. Navigate to Swagger UI (e.g., `https://localhost:7146/swagger`)
+3. Start the application: `dotnet run --project Bookstore.API` or in VS: select Debug configuration with https profile and F5
+    - Database migrations will be applied automatically on startup                
+4. Navigate to Swagger UI 
+    - Default is `https://localhost:7146/swagger`, should start automatically
 
 ### Testing with Read-Only User
 

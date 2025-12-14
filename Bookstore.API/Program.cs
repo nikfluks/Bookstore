@@ -36,6 +36,8 @@ try
 
     var app = builder.Build();
 
+    await app.ApplyDatabaseMigrationsAsync();
+
     app.UseExceptionHandler();
     app.UseStatusCodePages();
 
