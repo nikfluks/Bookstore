@@ -37,6 +37,14 @@ namespace Bookstore.API.Controllers
                 : Ok(result);
         }
 
+        [HttpGet("search")]
+        [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
+        public async Task<ActionResult<IEnumerable<BookDetailedResponse>>> Search([FromQuery] BookSearchRequest request)
+        {
+            var result = await bookService.SearchBooksAsync(request);
+            return Ok(result);
+        }
+
         [HttpPost]
         [Authorize(Roles = Roles.ReadWrite)]
         public async Task<ActionResult<BookDetailedResponse>> Create(BookCreateRequest bookCreate)

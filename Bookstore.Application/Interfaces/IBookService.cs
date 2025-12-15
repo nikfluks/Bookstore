@@ -7,6 +7,7 @@ namespace Bookstore.Application.Interfaces
         Task<IEnumerable<BookDetailedResponse>> GetAllDetailedAsync();
         Task<IEnumerable<BookDetailedResponse>> GetTop10ByRatingAsync();
         Task<BookDetailedResponse?> GetByIdAsync(int id);
+        Task<IEnumerable<BookDetailedResponse>> SearchBooksAsync(BookSearchRequest request);
         Task<BookDetailedResponse> CreateAsync(BookCreateRequest bookCreate);
         Task<BookDetailedResponse?> UpdateAsync(int id, BookPriceUpdateRequest priceUpdate);
         Task<BookDetailedResponse?> UpdateAuthorsAsync(int id, BookAuthorsUpdateRequest authorsUpdate);

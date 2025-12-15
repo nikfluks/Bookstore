@@ -141,6 +141,51 @@ namespace Bookstore.Application.Services
             }
         }
 
+        public async Task<IEnumerable<BookDetailedResponse>> SearchBooksAsync(BookSearchRequest request)
+        {
+            logger.LogInformation("Searching books with filters: {@SearchRequest}", request);
+
+            try
+            {
+                var results = await db.Database
+                    .SqlQueryRaw<BookDetailedResponseQuery>(
+                        @"EXEC SearchBooks 
+                            @SearchTerm = {0}, 
+                            @AuthorName = {1}, 
+                            @GenreName = {2}, 
+                            @MinPrice = {3}, 
+                            @MaxPrice = {4}, 
+                            @MinRating = {5}",
+                        request.SearchTerm!,
+                        request.AuthorName!,
+                        request.GenreName!,
+                        request.MinPrice!,
+                        request.MaxPrice!,
+                        request.MinRating!)
+                    .ToListAsync();
+
+                var books = results.Select(r => new BookDetailedResponse(
+                    r.Id,
+                    r.Title,
+                    string.IsNullOrEmpty(r.AuthorNames)
+                        ? new List<string>()
+                        : r.AuthorNames.Split(',').ToList(),
+                    string.IsNullOrEmpty(r.GenreNames)
+                        ? new List<string>()
+                        : r.GenreNames.Split(',').ToList(),
+                    Math.Round(r.AverageRating, 2)
+                )).ToList();
+
+                logger.LogInformation("Found {BookCount} books matching search criteria", books.Count);
+                return books;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error searching books");
+                throw;
+            }
+        }
+
         public async Task<BookDetailedResponse> CreateAsync(BookCreateRequest bookCreate)
         {
             logger.LogInformation("Creating new book: {BookTitle}", bookCreate.Title);
