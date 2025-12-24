@@ -1,7 +1,7 @@
 namespace Bookstore.Application.Models
 {
     public record BookSearchRequest(
-        string? SearchTerm = null,
+        string? BookTitle = null,
         string? AuthorName = null,
         string? GenreName = null,
         float? MinPrice = null,

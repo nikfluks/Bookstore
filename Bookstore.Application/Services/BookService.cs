@@ -150,13 +150,13 @@ namespace Bookstore.Application.Services
                 var results = await db.Database
                     .SqlQueryRaw<BookDetailedResponseQuery>(
                         @"EXEC SearchBooks 
-                            @SearchTerm = {0}, 
+                            @BookTitle = {0}, 
                             @AuthorName = {1}, 
                             @GenreName = {2}, 
                             @MinPrice = {3}, 
                             @MaxPrice = {4}, 
                             @MinRating = {5}",
-                        request.SearchTerm!,
+                        request.BookTitle!,
                         request.AuthorName!,
                         request.GenreName!,
                         request.MinPrice!,
