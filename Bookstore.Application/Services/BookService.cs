@@ -8,6 +8,30 @@ namespace Bookstore.Application.Services
 {
     internal class BookService(IAppDbContext db, ILogger<BookService> logger) : IBookService
     {
+        public async Task<IEnumerable<BookResponse>> GetAllAsync()
+        {
+            logger.LogInformation("Retrieving all books");
+
+            try
+            {
+                var books = await db.Books
+                    .Select(b => new BookResponse(
+                        b.Id,
+                        b.Title,
+                        b.Price
+                    ))
+                    .ToListAsync();
+
+                logger.LogInformation("Retrieved {BookCount} books", books.Count);
+                return books;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving all books");
+                throw;
+            }
+        }
+
         public async Task<IEnumerable<BookDetailedResponse>> GetAllDetailedAsync()
         {
             logger.LogInformation("Retrieving all books");
@@ -18,6 +42,7 @@ namespace Bookstore.Application.Services
                     .Select(b => new BookDetailedResponse(
                         b.Id,
                         b.Title,
+                        b.Price,
                         b.Authors.Select(a => a.Name).ToList(),
                         b.Genres.Select(g => g.Name).ToList(),
                         b.Reviews.Count > 0 ? Math.Round(b.Reviews.Average(r => r.Rating), 2) : 0
@@ -72,6 +97,7 @@ namespace Bookstore.Application.Services
                 SELECT 
 	                b.Id,
 	                b.Title,
+	                b.Price,
 	                COALESCE(ba.AuthorNames, '') AS AuthorNames,
 	                COALESCE(bg.GenreNames, '') AS GenreNames,
 	                br.AverageRating
@@ -89,6 +115,7 @@ namespace Bookstore.Application.Services
                 var books = results.Select(r => new BookDetailedResponse(
                     r.Id,
                     r.Title,
+                    r.Price,
                     string.IsNullOrEmpty(r.AuthorNames)
                         ? new List<string>()
                         : r.AuthorNames.Split(',').ToList(),
@@ -108,7 +135,7 @@ namespace Bookstore.Application.Services
             }
         }
 
-        public async Task<BookDetailedResponse?> GetByIdAsync(int id)
+        public async Task<BookResponse?> GetByIdAsync(int id)
         {
             logger.LogInformation("Retrieving book with Id: {BookId}", id);
 
@@ -116,12 +143,10 @@ namespace Bookstore.Application.Services
             {
                 var book = await db.Books
                     .Where(b => b.Id == id)
-                    .Select(b => new BookDetailedResponse(
+                    .Select(b => new BookResponse(
                         b.Id,
                         b.Title,
-                        b.Authors.Select(a => a.Name).ToList(),
-                        b.Genres.Select(g => g.Name).ToList(),
-                        b.Reviews.Count > 0 ? Math.Round(b.Reviews.Average(r => r.Rating), 2) : 0
+                        b.Price
                     ))
                     .FirstOrDefaultAsync();
 
@@ -155,18 +180,19 @@ namespace Bookstore.Application.Services
                             @GenreName = {2}, 
                             @MinPrice = {3}, 
                             @MaxPrice = {4}, 
-                            @MinRating = {5}",
+                            @MinAverageRating = {5}",
                         request.BookTitle!,
                         request.AuthorName!,
                         request.GenreName!,
                         request.MinPrice!,
                         request.MaxPrice!,
-                        request.MinRating!)
+                        request.MinAverageRating!)
                     .ToListAsync();
 
                 var books = results.Select(r => new BookDetailedResponse(
                     r.Id,
                     r.Title,
+                    r.Price,
                     string.IsNullOrEmpty(r.AuthorNames)
                         ? new List<string>()
                         : r.AuthorNames.Split(',').ToList(),
@@ -230,6 +256,7 @@ namespace Bookstore.Application.Services
                     .Select(b => new BookDetailedResponse(
                         b.Id,
                         b.Title,
+                        b.Price,
                         b.Authors.Select(a => a.Name).ToList(),
                         b.Genres.Select(g => g.Name).ToList(),
                         b.Reviews.Count > 0 ? Math.Round(b.Reviews.Average(r => r.Rating), 2) : 0
@@ -246,7 +273,7 @@ namespace Bookstore.Application.Services
             }
         }
 
-        public async Task<BookDetailedResponse?> UpdateAsync(int id, BookPriceUpdateRequest priceUpdate)
+        public async Task<BookResponse?> UpdateAsync(int id, BookPriceUpdateRequest priceUpdate)
         {
             logger.LogInformation("Updating price for book Id: {BookId}", id);
 
@@ -270,12 +297,10 @@ namespace Bookstore.Application.Services
 
                 var updatedBook = await db.Books
                     .Where(b => b.Id == id)
-                    .Select(b => new BookDetailedResponse(
+                    .Select(b => new BookResponse(
                         b.Id,
                         b.Title,
-                        b.Authors.Select(a => a.Name).ToList(),
-                        b.Genres.Select(g => g.Name).ToList(),
-                        b.Reviews.Count > 0 ? Math.Round(b.Reviews.Average(r => r.Rating), 2) : 0
+                        b.Price
                     ))
                     .FirstAsync();
 
@@ -357,6 +382,7 @@ namespace Bookstore.Application.Services
                     .Select(b => new BookDetailedResponse(
                         b.Id,
                         b.Title,
+                        b.Price,
                         b.Authors.Select(a => a.Name).ToList(),
                         b.Genres.Select(g => g.Name).ToList(),
                         b.Reviews.Count > 0 ? Math.Round(b.Reviews.Average(r => r.Rating), 2) : 0
@@ -411,6 +437,7 @@ namespace Bookstore.Application.Services
                     .Select(b => new BookDetailedResponse(
                         b.Id,
                         b.Title,
+                        b.Price,
                         b.Authors.Select(a => a.Name).ToList(),
                         b.Genres.Select(g => g.Name).ToList(),
                         b.Reviews.Count > 0 ? Math.Round(b.Reviews.Average(r => r.Rating), 2) : 0

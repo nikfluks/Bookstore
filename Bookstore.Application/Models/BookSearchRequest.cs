@@ -6,6 +6,6 @@ namespace Bookstore.Application.Models
         string? GenreName = null,
         float? MinPrice = null,
         float? MaxPrice = null,
-        float? MinRating = null
+        float? MinAverageRating = null
     );
 }

@@ -39,7 +39,7 @@ namespace Bookstore.API.Controllers
 
         [HttpPut("{id}")]
         [Authorize(Roles = Roles.ReadWrite)]
-        public async Task<IActionResult> Update(int id, AuthorUpdateRequest authorUpdate)
+        public async Task<ActionResult<AuthorResponse>> Update(int id, AuthorUpdateRequest authorUpdate)
         {
             var result = await authorService.UpdateAsync(id, authorUpdate);
             return result is null

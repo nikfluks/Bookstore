@@ -128,8 +128,7 @@ namespace Bookstore.Tests.Unit.Services
             result.Should().NotBeNull();
             result!.Id.Should().Be(1);
             result.Title.Should().Be("Test Book");
-            result.AuthorNames.Should().ContainSingle().Which.Should().Be("Test Author");
-            result.GenreNames.Should().ContainSingle().Which.Should().Be("Fiction");
+            result.Price.Should().Be(10.99f);
         }
 
         #endregion

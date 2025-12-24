@@ -48,17 +48,20 @@ namespace Bookstore.Infrastructure.Migrations
             migrationBuilder.Sql(@"
                 CREATE NONCLUSTERED INDEX IX_Books_Price 
                 ON Books(Price ASC)
-                INCLUDE (Title);
+                INCLUDE (Title)
+                WITH (DROP_EXISTING = ON);
             ");
 
             migrationBuilder.Sql(@"
                 CREATE NONCLUSTERED INDEX IX_Authors_Name 
-                ON Authors(Name ASC);
+                ON Authors(Name ASC)
+                WITH (DROP_EXISTING = ON);
             ");
 
             migrationBuilder.Sql(@"
                 CREATE NONCLUSTERED INDEX IX_Genres_Name 
-                ON Genres(Name ASC);
+                ON Genres(Name ASC)
+                WITH (DROP_EXISTING = ON);
             ");
 
             // Create full-text catalog (must run outside transaction)
@@ -87,7 +90,7 @@ namespace Bookstore.Infrastructure.Migrations
                     @GenreName NVARCHAR(100) = NULL,
                     @MinPrice FLOAT = NULL,
                     @MaxPrice FLOAT = NULL,
-                    @MinRating FLOAT = NULL,
+                    @MinAverageRating FLOAT = NULL,
                     @UseFreeText BIT = 1
                 AS
                 BEGIN
@@ -132,7 +135,7 @@ namespace Bookstore.Infrastructure.Migrations
                             AND (@MinPrice IS NULL OR b.Price >= @MinPrice)
                             AND (@MaxPrice IS NULL OR b.Price <= @MaxPrice)
                         GROUP BY b.Id, b.Title, b.Price
-                        HAVING (@MinRating IS NULL OR COALESCE(AVG(CAST(r.Rating AS FLOAT)), 0) >= @MinRating)
+                        HAVING (@MinAverageRating IS NULL OR COALESCE(AVG(CAST(r.Rating AS FLOAT)), 0) >= @MinAverageRating)
                     ),
                     BookAuthors AS (
                         SELECT 
@@ -155,6 +158,7 @@ namespace Bookstore.Infrastructure.Migrations
                     SELECT 
                         fb.Id,
                         fb.Title,
+                        fb.Price,
                         COALESCE(ba.AuthorNames, '') AS AuthorNames,
                         COALESCE(bg.GenreNames, '') AS GenreNames,
                         fb.AverageRating

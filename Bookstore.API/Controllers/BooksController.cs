@@ -13,6 +13,14 @@ namespace Bookstore.API.Controllers
     {
         [HttpGet]
         [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
+        public async Task<ActionResult<IEnumerable<BookResponse>>> GetAll()
+        {
+            var result = await bookService.GetAllAsync();
+            return Ok(result);
+        }
+
+        [HttpGet("details")]
+        [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
         public async Task<ActionResult<IEnumerable<BookDetailedResponse>>> GetAllDetailed()
         {
             var result = await bookService.GetAllDetailedAsync();
@@ -29,7 +37,7 @@ namespace Bookstore.API.Controllers
 
         [HttpGet("{id}")]
         [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
-        public async Task<ActionResult<BookDetailedResponse>> GetById(int id)
+        public async Task<ActionResult<BookResponse>> GetById(int id)
         {
             var result = await bookService.GetByIdAsync(id);
             return result is null
@@ -55,7 +63,7 @@ namespace Bookstore.API.Controllers
 
         [HttpPut("{id}")]
         [Authorize(Roles = Roles.ReadWrite)]
-        public async Task<IActionResult> Update(int id, BookPriceUpdateRequest priceUpdate)
+        public async Task<ActionResult<BookResponse>> Update(int id, BookPriceUpdateRequest priceUpdate)
         {
             var result = await bookService.UpdateAsync(id, priceUpdate);
             return result is null
@@ -74,7 +82,7 @@ namespace Bookstore.API.Controllers
 
         [HttpPut("{id}/authors")]
         [Authorize(Roles = Roles.ReadWrite)]
-        public async Task<IActionResult> UpdateAuthors(int id, BookAuthorsUpdateRequest authorsUpdate)
+        public async Task<ActionResult<BookDetailedResponse>> UpdateAuthors(int id, BookAuthorsUpdateRequest authorsUpdate)
         {
             var result = await bookService.UpdateAuthorsAsync(id, authorsUpdate);
             return result is null
@@ -84,7 +92,7 @@ namespace Bookstore.API.Controllers
 
         [HttpPut("{id}/genres")]
         [Authorize(Roles = Roles.ReadWrite)]
-        public async Task<IActionResult> UpdateGenres(int id, BookGenresUpdateRequest genresUpdate)
+        public async Task<ActionResult<BookDetailedResponse>> UpdateGenres(int id, BookGenresUpdateRequest genresUpdate)
         {
             var result = await bookService.UpdateGenresAsync(id, genresUpdate);
             return result is null
