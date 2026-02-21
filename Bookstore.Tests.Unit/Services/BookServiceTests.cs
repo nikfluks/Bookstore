@@ -39,9 +39,9 @@ namespace Bookstore.Tests.Unit.Services
         [Fact]
         public async Task GetAllDetailedAsync_ShouldReturnEmptyList_WhenNoBooksExist()
         {
-            var result = await _bookService.GetAllDetailedAsync();
+            var result = await _bookService.GetAllDetailedAsync(new PagedRequest());
 
-            result.Should().BeEmpty();
+            result.Items.Should().BeEmpty();
         }
 
         [Fact]
@@ -65,9 +65,9 @@ namespace Bookstore.Tests.Unit.Services
             _dbContext.Books.AddRange(book1, book2);
             await _dbContext.SaveChangesAsync();
 
-            var result = await _bookService.GetAllDetailedAsync();
+            var result = await _bookService.GetAllDetailedAsync(new PagedRequest());
 
-            var booksList = result.ToList();
+            var booksList = result.Items.ToList();
             booksList.Should().HaveCount(2);
             booksList[0].Title.Should().Be("Book 1");
             booksList[0].AuthorNames.Should().ContainSingle().Which.Should().Be("Author 1");
@@ -90,9 +90,9 @@ namespace Bookstore.Tests.Unit.Services
             _dbContext.Reviews.AddRange(review1, review2);
             await _dbContext.SaveChangesAsync();
 
-            var result = await _bookService.GetAllDetailedAsync();
+            var result = await _bookService.GetAllDetailedAsync(new PagedRequest());
 
-            var booksList = result.ToList();
+            var booksList = result.Items.ToList();
             booksList.Should().ContainSingle();
             booksList[0].AverageRating.Should().Be(4.5);
         }

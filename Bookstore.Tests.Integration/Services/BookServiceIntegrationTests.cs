@@ -199,9 +199,9 @@ namespace Bookstore.Tests.Integration.Services
             DbContext.Reviews.Add(review);
             await DbContext.SaveChangesAsync();
 
-            var result = await _bookService.GetAllDetailedAsync();
+            var result = await _bookService.GetAllDetailedAsync(new PagedRequest());
 
-            var booksList = result.ToList();
+            var booksList = result.Items.ToList();
             booksList.Should().ContainSingle();
             booksList[0].Title.Should().Be("Integration Test Book");
             booksList[0].AverageRating.Should().Be(4.0);

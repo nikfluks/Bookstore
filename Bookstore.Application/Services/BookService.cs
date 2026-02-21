@@ -8,13 +8,20 @@ namespace Bookstore.Application.Services
 {
     internal class BookService(IAppDbContext db, ILogger<BookService> logger) : IBookService
     {
-        public async Task<IEnumerable<BookResponse>> GetAllAsync()
+        public async Task<PagedResponse<BookResponse>> GetAllAsync(PagedRequest request)
         {
-            logger.LogInformation("Retrieving all books");
+            logger.LogInformation("Retrieving all books (Page {PageNumber}, PageSize {PageSize})", request.PageNumber, request.PageSize);
 
             try
             {
-                var books = await db.Books
+                var query = db.Books.AsQueryable();
+
+                var totalCount = await query.CountAsync();
+
+                var books = await query
+                    .OrderBy(b => b.Id)
+                    .Skip((request.PageNumber - 1) * request.PageSize)
+                    .Take(request.PageSize)
                     .Select(b => new BookResponse(
                         b.Id,
                         b.Title,
@@ -22,8 +29,18 @@ namespace Bookstore.Application.Services
                     ))
                     .ToListAsync();
 
-                logger.LogInformation("Retrieved {BookCount} books", books.Count);
-                return books;
+                var pagedResult = new PagedResponse<BookResponse>
+                {
+                    Items = books,
+                    TotalCount = totalCount,
+                    PageNumber = request.PageNumber,
+                    PageSize = request.PageSize
+                };
+
+                logger.LogInformation("Retrieved {TotalCount} books total " +
+                    "with {CurrentPageCount} books in current page {PageNumber}/{TotalPages}",
+                    totalCount, books.Count, pagedResult.PageNumber, pagedResult.TotalPages);
+                return pagedResult;
             }
             catch (Exception ex)
             {
@@ -32,13 +49,20 @@ namespace Bookstore.Application.Services
             }
         }
 
-        public async Task<IEnumerable<BookDetailedResponse>> GetAllDetailedAsync()
+        public async Task<PagedResponse<BookDetailedResponse>> GetAllDetailedAsync(PagedRequest request)
         {
-            logger.LogInformation("Retrieving all books");
+            logger.LogInformation("Retrieving all detailed books (Page {PageNumber}, PageSize {PageSize})", request.PageNumber, request.PageSize);
 
             try
             {
-                var books = await db.Books
+                var query = db.Books.AsQueryable();
+
+                var totalCount = await query.CountAsync();
+
+                var books = await query
+                    .OrderBy(b => b.Id)
+                    .Skip((request.PageNumber - 1) * request.PageSize)
+                    .Take(request.PageSize)
                     .Select(b => new BookDetailedResponse(
                         b.Id,
                         b.Title,
@@ -49,12 +73,22 @@ namespace Bookstore.Application.Services
                     ))
                     .ToListAsync();
 
-                logger.LogInformation("Retrieved {BookCount} books", books.Count);
-                return books;
+                var pagedResult = new PagedResponse<BookDetailedResponse>
+                {
+                    Items = books,
+                    TotalCount = totalCount,
+                    PageNumber = request.PageNumber,
+                    PageSize = request.PageSize
+                };
+
+                logger.LogInformation("Retrieved {TotalCount} detailed books total " +
+                    "with {CurrentPageCount} books in current page {PageNumber}/{TotalPages}",
+                    totalCount, books.Count, pagedResult.PageNumber, pagedResult.TotalPages);
+                return pagedResult;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error retrieving all books");
+                logger.LogError(ex, "Error retrieving all detailed books");
                 throw;
             }
         }
@@ -100,7 +134,8 @@ namespace Bookstore.Application.Services
 	                b.Price,
 	                COALESCE(ba.AuthorNames, '') AS AuthorNames,
 	                COALESCE(bg.GenreNames, '') AS GenreNames,
-	                br.AverageRating
+	                br.AverageRating,
+	                COUNT(*) OVER() AS TotalCount
                 FROM BookRatings br
                 JOIN Books b ON b.Id = br.Id
                 LEFT JOIN BookAuthors ba ON b.Id = ba.BooksId
@@ -166,7 +201,7 @@ namespace Bookstore.Application.Services
             }
         }
 
-        public async Task<IEnumerable<BookDetailedResponse>> SearchBooksAsync(BookSearchRequest request)
+        public async Task<PagedResponse<BookDetailedResponse>> SearchBooksAsync(BookSearchRequest request)
         {
             logger.LogInformation("Searching books with filters: {@SearchRequest}", request);
 
@@ -180,13 +215,17 @@ namespace Bookstore.Application.Services
                             @GenreName = {2}, 
                             @MinPrice = {3}, 
                             @MaxPrice = {4}, 
-                            @MinAverageRating = {5}",
+                            @MinAverageRating = {5},
+                            @PageNumber = {6},
+                            @PageSize = {7}",
                         request.BookTitle!,
                         request.AuthorName!,
                         request.GenreName!,
                         request.MinPrice!,
                         request.MaxPrice!,
-                        request.MinAverageRating!)
+                        request.MinAverageRating!,
+                        request.PageNumber,
+                        request.PageSize)
                     .ToListAsync();
 
                 var books = results.Select(r => new BookDetailedResponse(
@@ -202,8 +241,25 @@ namespace Bookstore.Application.Services
                     Math.Round(r.AverageRating, 2)
                 )).ToList();
 
-                logger.LogInformation("Found {BookCount} books matching search criteria", books.Count);
-                return books;
+                var totalCount = results.Count > 0 ? results[0].TotalCount : 0;
+
+                var pagedResult = new PagedResponse<BookDetailedResponse>
+                {
+                    Items = books,
+                    TotalCount = totalCount,
+                    PageNumber = request.PageNumber,
+                    PageSize = request.PageSize
+                };
+
+                logger.LogInformation(
+                    "Found {TotalCount} books matching search criteria " +
+                    "with {CurrentPageCount} books in current page {PageNumber}/{TotalPages}",
+                    pagedResult.TotalCount,
+                    books.Count,
+                    pagedResult.PageNumber,
+                    pagedResult.TotalPages);
+
+                return pagedResult;
             }
             catch (Exception ex)
             {
@@ -451,6 +507,13 @@ namespace Bookstore.Application.Services
                 logger.LogError(ex, "Error updating genres for book Id: {BookId}", id);
                 throw;
             }
+        }
+
+        public IQueryable<Book> GetBooksQueryable()
+        {
+            logger.LogInformation("Retrieving books as queryable for OData");
+
+            return db.Books.AsNoTracking();
         }
     }
 }

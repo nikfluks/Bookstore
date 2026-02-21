@@ -36,7 +36,7 @@ namespace Bookstore.Application.Services
 
         public async Task<IEnumerable<ImportBookDto>> FetchBooksAsync()
         {
-            logger.LogInformation("Simulating fetch from third-party API...");
+            logger.LogInformation("Simulating fetch from third-party API start...");
 
             const int totalBooks = 100000;
             var books = new List<ImportBookDto>(totalBooks);
@@ -62,7 +62,7 @@ namespace Bookstore.Application.Services
                 books.Add(new ImportBookDto(title, price, authorNames, genreNames));
             }
 
-            logger.LogInformation("Simulated API returned {BookCount} books", books.Count);
+            logger.LogInformation("Simulated fetch from third-party API completed. Returned {BookCount} books", books.Count);
             return await Task.FromResult<IEnumerable<ImportBookDto>>(books);
         }
     }

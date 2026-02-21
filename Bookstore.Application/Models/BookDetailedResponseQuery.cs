@@ -6,5 +6,6 @@
         float Price,
         string AuthorNames,
         string GenreNames,
-        double AverageRating);
+        double AverageRating,
+        int TotalCount);
 }

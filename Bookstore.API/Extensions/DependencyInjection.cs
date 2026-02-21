@@ -1,12 +1,15 @@
 ﻿using Bookstore.API.Jobs;
 using Bookstore.API.Middleware;
+using Bookstore.Application.Constants;
 using Bookstore.Application.Models.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.OData;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Quartz;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace Bookstore.API.Extensions
 {
@@ -14,12 +17,25 @@ namespace Bookstore.API.Extensions
     {
         public static IServiceCollection AddApiServices(this IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+                })
+                .AddOData(options => options
+                    .Select()
+                    .Filter()
+                    .OrderBy()
+                    .Expand()
+                    .SetMaxTop(Pagination.MaxPageSize)
+                    .Count());
 
             services.AddOpenApi("bookstore");
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen(c =>
             {
+                c.EnableAnnotations();
+
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Title = "Bookstore API",

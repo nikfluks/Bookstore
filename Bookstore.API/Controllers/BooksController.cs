@@ -1,8 +1,11 @@
 ﻿using Bookstore.Application.Constants;
 using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models;
+using Bookstore.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace Bookstore.API.Controllers
 {
@@ -13,22 +16,41 @@ namespace Bookstore.API.Controllers
     {
         [HttpGet]
         [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
-        public async Task<ActionResult<IEnumerable<BookResponse>>> GetAll()
+        public async Task<ActionResult<PagedResponse<BookResponse>>> GetAll([FromQuery] PagedRequest request)
         {
-            var result = await bookService.GetAllAsync();
+            var result = await bookService.GetAllAsync(request);
             return Ok(result);
+        }
+
+        [HttpGet("odata")]
+        [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
+        [EnableQuery(PageSize = Pagination.DefaultPageSize)]
+        [SwaggerOperation(
+            Description = "Example: /api/books/odata?$filter=price lt 100&$orderby=title desc&$top=10&$skip=0" +
+                "&$count=true&$select=id,title,price&$expand=authors($select=name),reviews($filter=rating ge 4),genres")]
+        public IQueryable<Book> GetBooksOData(
+            [FromQuery(Name = "$filter")] string? filter = null,
+            [FromQuery(Name = "$orderby")] string? orderby = null,
+            [FromQuery(Name = "$top")] int? top = null,
+            [FromQuery(Name = "$skip")] int? skip = null,
+            [FromQuery(Name = "$count")] bool? count = null,
+            [FromQuery(Name = "$select")] string? select = null,
+            [FromQuery(Name = "$expand")] string? expand = null)
+        {
+            return bookService.GetBooksQueryable();
         }
 
         [HttpGet("details")]
         [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
-        public async Task<ActionResult<IEnumerable<BookDetailedResponse>>> GetAllDetailed()
+        public async Task<ActionResult<PagedResponse<BookDetailedResponse>>> GetAllDetailed([FromQuery] PagedRequest request)
         {
-            var result = await bookService.GetAllDetailedAsync();
+            var result = await bookService.GetAllDetailedAsync(request);
             return Ok(result);
         }
 
         [HttpGet("top-10")]
         [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
+        [SwaggerOperation(Summary = "Gets top 10 books by average rating")]
         public async Task<ActionResult<IEnumerable<BookDetailedResponse>>> GetTop10ByRating()
         {
             var result = await bookService.GetTop10ByRatingAsync();
@@ -47,7 +69,7 @@ namespace Bookstore.API.Controllers
 
         [HttpGet("search")]
         [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
-        public async Task<ActionResult<IEnumerable<BookDetailedResponse>>> Search([FromQuery] BookSearchRequest request)
+        public async Task<ActionResult<PagedResponse<BookDetailedResponse>>> Search([FromQuery] BookSearchRequest request)
         {
             var result = await bookService.SearchBooksAsync(request);
             return Ok(result);
