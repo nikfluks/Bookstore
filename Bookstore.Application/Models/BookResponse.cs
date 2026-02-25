@@ -1,7 +1,8 @@
-namespace Bookstore.Application.Models
-{
-    public record BookResponse(
-        int Id,
-        string Title,
-        float Price);
-}
+namespace Bookstore.Application.Models;
+
+public record BookResponse
+(
+    int Id,
+    string Title,
+    float Price
+);

@@ -1,4 +1,3 @@
-namespace Bookstore.Application.Models
-{
-    public record BookGenresUpdateRequest(List<int> GenreIds);
-}
+namespace Bookstore.Application.Models;
+
+public record BookGenresUpdateRequest(IReadOnlyList<int> GenreIds);

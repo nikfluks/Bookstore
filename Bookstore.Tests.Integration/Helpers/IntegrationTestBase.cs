@@ -1,42 +1,52 @@
 using Bookstore.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
-namespace Bookstore.Tests.Integration.Helpers
+namespace Bookstore.Tests.Integration.Helpers;
+
+public abstract class IntegrationTestBase : IDisposable
 {
-    public abstract class IntegrationTestBase : IDisposable
+    public AppDbContext DbContext { get; }
+    private readonly string databaseName;
+    private bool disposed;
+
+    protected IntegrationTestBase()
     {
-        protected readonly AppDbContext DbContext;
-        protected readonly string DatabaseName;
+        databaseName = $"BookstoreTest_{Guid.NewGuid():N}";
 
-        protected IntegrationTestBase()
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlServer($"Data Source=.;Initial Catalog={databaseName};Integrated Security=True;Persist Security Info=False;Pooling=False;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=True;Command Timeout=30")
+            .Options;
+
+        DbContext = new AppDbContext(options);
+
+        DbContext.Database.EnsureCreated();
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposed)
         {
-            DatabaseName = $"BookstoreTest_{Guid.NewGuid():N}";
-
-            var options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseSqlServer($"Data Source=.;Initial Catalog={DatabaseName};Integrated Security=True;Persist Security Info=False;Pooling=False;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=True;Command Timeout=30")
-                .Options;
-
-            DbContext = new AppDbContext(options);
-
-            DbContext.Database.EnsureCreated();
-        }
-
-        public void Dispose()
-        {
-            try
+            if (disposing)
             {
-                DbContext.Database.EnsureDeleted();
+                try
+                {
+                    DbContext.Database.EnsureDeleted();
+                }
+                finally
+                {
+                    DbContext.Dispose();
+                }
             }
-            catch
-            {
+            // No unmanaged resources to clean up
 
-            }
-            finally
-            {
-                DbContext.Dispose();
-            }
-
-            GC.SuppressFinalize(this);
+            disposed = true;
         }
     }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 }
+

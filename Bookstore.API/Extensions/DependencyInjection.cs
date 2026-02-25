@@ -1,4 +1,6 @@
-﻿using Bookstore.API.Jobs;
+using System.Text;
+using System.Text.Json.Serialization;
+using Bookstore.API.Jobs;
 using Bookstore.API.Middleware;
 using Bookstore.Application.Constants;
 using Bookstore.Application.Models.Auth;
@@ -8,127 +10,124 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Quartz;
-using System.Text;
-using System.Text.Json.Serialization;
 
-namespace Bookstore.API.Extensions
+namespace Bookstore.API.Extensions;
+
+public static class DependencyInjection
 {
-    public static class DependencyInjection
+    public static IServiceCollection AddApiServices(this IServiceCollection services)
     {
-        public static IServiceCollection AddApiServices(this IServiceCollection services)
-        {
-            services.AddControllers()
-                .AddJsonOptions(options =>
-                {
-                    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-                })
-                .AddOData(options => options
-                    .Select()
-                    .Filter()
-                    .OrderBy()
-                    .Expand()
-                    .SetMaxTop(Pagination.MaxPageSize)
-                    .Count());
-
-            services.AddOpenApi("bookstore");
-            services.AddEndpointsApiExplorer();
-            services.AddSwaggerGen(c =>
+        services.AddControllers()
+            .AddJsonOptions(options =>
             {
-                c.EnableAnnotations();
-
-                c.SwaggerDoc("v1", new OpenApiInfo
-                {
-                    Title = "Bookstore API",
-                    Version = "v1",
-                    Description = "Bookstore API with JWT Authentication."
-                });
-
-                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-                {
-                    Type = SecuritySchemeType.Http,
-                    In = ParameterLocation.Header,
-                    Name = "Authorization",
-                    Scheme = "Bearer",
-                    Description = "JWT Authorization header. Enter token (without Bearer)",
-                });
-
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Type = ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
-                        },
-                        Array.Empty<string>()
-                    }
-                });
-            });
-
-            services.AddExceptionHandler<GlobalExceptionHandler>();
-            services.AddProblemDetails();
-
-            return services;
-        }
-
-        public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
-        {
-            services.AddOptions<JwtSettings>()
-                .Bind(configuration.GetSection(nameof(JwtSettings)))
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
-
-            var serviceProvider = services.BuildServiceProvider();
-            var jwtSettings = serviceProvider.GetRequiredService<IOptions<JwtSettings>>().Value;
-
-            services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
             })
-            .AddJwtBearer(options =>
-            {
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwtSettings.Issuer,
-                    ValidAudience = jwtSettings.Audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
-                };
-            });
+            .AddOData(options => options
+                .Select()
+                .Filter()
+                .OrderBy()
+                .Expand()
+                .SetMaxTop(Pagination.MaxPageSize)
+                .Count());
 
-            services.AddAuthorization();
-
-            return services;
-        }
-
-        public static IServiceCollection AddQuartzScheduling(this IServiceCollection services)
+        services.AddOpenApi("bookstore");
+        services.AddEndpointsApiExplorer();
+        services.AddSwaggerGen(c =>
         {
-            services.AddQuartz(q =>
-            {
-                var jobKey = new JobKey("BookImportJob");
-                q.AddJob<BookImportJob>(opts => opts.WithIdentity(jobKey));
+            c.EnableAnnotations();
 
-                q.AddTrigger(opts => opts
-                   .ForJob(jobKey)
-                   .WithIdentity($"{jobKey.Name}-trigger")
-                   .WithCronSchedule("0 0 * * * ?")
-                   .WithDescription("Runs book import every hour, every day"));
+            c.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "Bookstore API",
+                Version = "v1",
+                Description = "Bookstore API with JWT Authentication."
             });
 
-            services.AddQuartzHostedService(options =>
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
-                options.WaitForJobsToComplete = true;
+                Type = SecuritySchemeType.Http,
+                In = ParameterLocation.Header,
+                Name = "Authorization",
+                Scheme = "Bearer",
+                Description = "JWT Authorization header. Enter token (without Bearer)",
             });
 
-            return services;
-        }
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            });
+        });
+
+        services.AddExceptionHandler<GlobalExceptionHandler>();
+        services.AddProblemDetails();
+
+        return services;
+    }
+
+    public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<JwtSettings>()
+            .Bind(configuration.GetSection(nameof(JwtSettings)))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        var serviceProvider = services.BuildServiceProvider();
+        var jwtSettings = serviceProvider.GetRequiredService<IOptions<JwtSettings>>().Value;
+
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = jwtSettings.Issuer,
+                ValidAudience = jwtSettings.Audience,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
+            };
+        });
+
+        services.AddAuthorization();
+
+        return services;
+    }
+
+    public static IServiceCollection AddQuartzScheduling(this IServiceCollection services)
+    {
+        services.AddQuartz(q =>
+        {
+            var jobKey = new JobKey("BookImportJob");
+            q.AddJob<BookImportJob>(opts => opts.WithIdentity(jobKey));
+
+            q.AddTrigger(opts => opts
+               .ForJob(jobKey)
+               .WithIdentity($"{jobKey.Name}-trigger")
+               .WithCronSchedule("0 0 * * * ?")
+               .WithDescription("Runs book import every hour, every day"));
+        });
+
+        services.AddQuartzHostedService(options =>
+        {
+            options.WaitForJobsToComplete = true;
+        });
+
+        return services;
     }
 }

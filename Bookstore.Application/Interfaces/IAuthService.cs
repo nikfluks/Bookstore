@@ -1,9 +1,8 @@
 using Bookstore.Application.Models.Auth;
 
-namespace Bookstore.Application.Interfaces
+namespace Bookstore.Application.Interfaces;
+
+public interface IAuthService
 {
-    public interface IAuthService
-    {
-        Task<AuthenticationResult> AuthenticateAsync(LoginRequest request);
-    }
+    Task<AuthenticationResult> AuthenticateAsync(LoginRequest request);
 }

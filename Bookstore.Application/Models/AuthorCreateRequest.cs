@@ -1,4 +1,3 @@
-namespace Bookstore.Application.Models
-{
-    public record AuthorCreateRequest(string Name, int BirthYear);
-}
+namespace Bookstore.Application.Models;
+
+public record AuthorCreateRequest(string Name, int BirthYear);

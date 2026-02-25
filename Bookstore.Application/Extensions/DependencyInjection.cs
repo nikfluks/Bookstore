@@ -1,24 +1,23 @@
-﻿using Bookstore.Application.Interfaces;
+using Bookstore.Application.Interfaces;
 using Bookstore.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Bookstore.Application.Extensions
+namespace Bookstore.Application.Extensions;
+
+public static class DependencyInjection
 {
-    public static class DependencyInjection
+    public static IServiceCollection AddAppServices(this IServiceCollection services)
     {
-        public static IServiceCollection AddAppServices(this IServiceCollection services)
-        {
-            services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IAuthService, AuthService>();
 
-            services.AddScoped<IBookService, BookService>();
-            services.AddScoped<IAuthorService, AuthorService>();
-            services.AddScoped<IGenreService, GenreService>();
-            services.AddScoped<IReviewService, ReviewService>();
+        services.AddScoped<IBookService, BookService>();
+        services.AddScoped<IAuthorService, AuthorService>();
+        services.AddScoped<IGenreService, GenreService>();
+        services.AddScoped<IReviewService, ReviewService>();
 
-            services.AddScoped<IBookImportService, BookImportService>();
-            services.AddSingleton<IThirdPartyBookApiService, ThirdPartyBookApiService>();
+        services.AddScoped<IBookImportService, BookImportService>();
+        services.AddSingleton<IThirdPartyBookApiService, ThirdPartyBookApiService>();
 
-            return services;
-        }
+        return services;
     }
 }

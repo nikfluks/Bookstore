@@ -1,10 +1,11 @@
+using System.Globalization;
 using Bookstore.API.Extensions;
 using Bookstore.Application.Extensions;
 using Bookstore.Infrastructure.Extensions;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
+    .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
     .CreateBootstrapLogger();
 
 try

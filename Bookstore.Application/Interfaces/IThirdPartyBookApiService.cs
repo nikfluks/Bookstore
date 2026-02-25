@@ -1,9 +1,8 @@
 using Bookstore.Application.Models;
 
-namespace Bookstore.Application.Interfaces
+namespace Bookstore.Application.Interfaces;
+
+public interface IThirdPartyBookApiService
 {
-    public interface IThirdPartyBookApiService
-    {
-        Task<IEnumerable<ImportBookDto>> FetchBooksAsync();
-    }
+    Task<IEnumerable<ImportBookDto>> FetchBooksAsync();
 }

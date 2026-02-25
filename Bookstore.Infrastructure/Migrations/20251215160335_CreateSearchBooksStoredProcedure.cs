@@ -2,15 +2,15 @@
 
 #nullable disable
 
-namespace Bookstore.Infrastructure.Migrations
+namespace Bookstore.Infrastructure.Migrations;
+
+/// <inheritdoc />
+public partial class CreateSearchBooksStoredProcedure : Migration
 {
     /// <inheritdoc />
-    public partial class CreateSearchBooksStoredProcedure : Migration
+    protected override void Up(MigrationBuilder migrationBuilder)
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.Sql(@"
+        migrationBuilder.Sql(@"
                 CREATE OR ALTER PROCEDURE SearchBooks
                     @SearchTerm NVARCHAR(100) = NULL,
                     @AuthorName NVARCHAR(100) = NULL,
@@ -72,12 +72,11 @@ namespace Bookstore.Infrastructure.Migrations
                     ORDER BY fb.AverageRating DESC, fb.Title
                 END
             ");
-        }
+    }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.Sql("DROP PROCEDURE IF EXISTS SearchBooks");
-        }
+    /// <inheritdoc />
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.Sql("DROP PROCEDURE IF EXISTS SearchBooks");
     }
 }

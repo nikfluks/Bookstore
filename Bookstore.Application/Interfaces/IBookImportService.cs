@@ -1,7 +1,6 @@
-namespace Bookstore.Application.Interfaces
+namespace Bookstore.Application.Interfaces;
+
+public interface IBookImportService
 {
-    public interface IBookImportService
-    {
-        Task<int> ImportBooksAsync();
-    }
+    Task<int> ImportBooksAsync();
 }

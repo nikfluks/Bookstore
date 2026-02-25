@@ -2,15 +2,15 @@
 
 #nullable disable
 
-namespace Bookstore.Infrastructure.Migrations
+namespace Bookstore.Infrastructure.Migrations;
+
+/// <inheritdoc />
+public partial class UpdateSearchBooksProcedureWithPagination : Migration
 {
     /// <inheritdoc />
-    public partial class UpdateSearchBooksProcedureWithPagination : Migration
+    protected override void Up(MigrationBuilder migrationBuilder)
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.Sql(@"
+        migrationBuilder.Sql(@"
                 CREATE OR ALTER PROCEDURE SearchBooks
                     @BookTitle NVARCHAR(500) = NULL,
                     @AuthorName NVARCHAR(200) = NULL,
@@ -100,12 +100,12 @@ namespace Bookstore.Infrastructure.Migrations
                     ORDER BY pb.RowNum
                 END
             ");
-        }
+    }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.Sql(@"
+    /// <inheritdoc />
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.Sql(@"
                 CREATE OR ALTER PROCEDURE SearchBooks
                     @BookTitle NVARCHAR(500) = NULL,
                     @AuthorName NVARCHAR(200) = NULL,
@@ -190,6 +190,5 @@ namespace Bookstore.Infrastructure.Migrations
                     ORDER BY fb.AverageRating DESC, fb.Title;
                 END
             ");
-        }
     }
 }

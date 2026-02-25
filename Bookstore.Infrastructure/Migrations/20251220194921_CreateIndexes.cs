@@ -2,78 +2,78 @@
 
 #nullable disable
 
-namespace Bookstore.Infrastructure.Migrations
+namespace Bookstore.Infrastructure.Migrations;
+
+/// <inheritdoc />
+public partial class CreateIndexes : Migration
 {
     /// <inheritdoc />
-    public partial class CreateIndexes : Migration
+    protected override void Up(MigrationBuilder migrationBuilder)
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            // Fix column lengths to allow indexing (nvarchar(max) cannot be indexed)
-            migrationBuilder.AlterColumn<string>(
-                name: "Name",
-                table: "Authors",
-                type: "nvarchar(200)",
-                maxLength: 200,
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(max)");
+        // Fix column lengths to allow indexing (nvarchar(max) cannot be indexed)
+        migrationBuilder.AlterColumn<string>(
+            name: "Name",
+            table: "Authors",
+            type: "nvarchar(200)",
+            maxLength: 200,
+            nullable: false,
+            oldClrType: typeof(string),
+            oldType: "nvarchar(max)");
 
-            migrationBuilder.AlterColumn<string>(
-                name: "Name",
-                table: "Genres",
-                type: "nvarchar(100)",
-                maxLength: 100,
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(max)");
+        migrationBuilder.AlterColumn<string>(
+            name: "Name",
+            table: "Genres",
+            type: "nvarchar(100)",
+            maxLength: 100,
+            nullable: false,
+            oldClrType: typeof(string),
+            oldType: "nvarchar(max)");
 
-            migrationBuilder.AlterColumn<string>(
-                name: "Title",
-                table: "Books",
-                type: "nvarchar(500)",
-                maxLength: 500,
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(max)");
+        migrationBuilder.AlterColumn<string>(
+            name: "Title",
+            table: "Books",
+            type: "nvarchar(500)",
+            maxLength: 500,
+            nullable: false,
+            oldClrType: typeof(string),
+            oldType: "nvarchar(max)");
 
-            migrationBuilder.Sql(@"
+        migrationBuilder.Sql(@"
                 CREATE NONCLUSTERED INDEX IX_Reviews_BookId 
                 ON Reviews(BookId ASC)
                 INCLUDE (Rating)
                 WITH (DROP_EXISTING = ON);
             ");
 
-            migrationBuilder.Sql(@"
+        migrationBuilder.Sql(@"
                 CREATE NONCLUSTERED INDEX IX_Books_Price 
                 ON Books(Price ASC)
                 INCLUDE (Title)
                 WITH (DROP_EXISTING = ON);
             ");
 
-            migrationBuilder.Sql(@"
+        migrationBuilder.Sql(@"
                 CREATE NONCLUSTERED INDEX IX_Authors_Name 
                 ON Authors(Name ASC)
                 WITH (DROP_EXISTING = ON);
             ");
 
-            migrationBuilder.Sql(@"
+        migrationBuilder.Sql(@"
                 CREATE NONCLUSTERED INDEX IX_Genres_Name 
                 ON Genres(Name ASC)
                 WITH (DROP_EXISTING = ON);
             ");
 
-            // Create full-text catalog (must run outside transaction)
-            migrationBuilder.Sql(@"
+        // Create full-text catalog (must run outside transaction)
+        migrationBuilder.Sql(@"
                 IF NOT EXISTS (SELECT 1 FROM sys.fulltext_catalogs WHERE name = 'BookstoreCatalog')
                 BEGIN
                     CREATE FULLTEXT CATALOG BookstoreCatalog AS DEFAULT;
                 END
             ", suppressTransaction: true);
 
-            // Create full-text index on Books.Title (must run outside transaction)
-            migrationBuilder.Sql(@"
+        // Create full-text index on Books.Title (must run outside transaction)
+        migrationBuilder.Sql(@"
                 IF NOT EXISTS (SELECT 1 FROM sys.fulltext_indexes WHERE object_id = OBJECT_ID('Books'))
                 BEGIN
                     CREATE FULLTEXT INDEX ON Books(Title LANGUAGE 1033) -- 1033 = English
@@ -83,7 +83,7 @@ namespace Bookstore.Infrastructure.Migrations
                 END
             ", suppressTransaction: true);
 
-            migrationBuilder.Sql(@"
+        migrationBuilder.Sql(@"
                 CREATE OR ALTER PROCEDURE SearchBooks
                     @BookTitle NVARCHAR(500) = NULL,
                     @AuthorName NVARCHAR(200) = NULL,
@@ -168,12 +168,12 @@ namespace Bookstore.Infrastructure.Migrations
                     ORDER BY fb.AverageRating DESC, fb.Title;
                 END
             ");
-        }
+    }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.Sql(@"
+    /// <inheritdoc />
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.Sql(@"
                 CREATE OR ALTER PROCEDURE SearchBooks
                     @SearchTerm NVARCHAR(100) = NULL,
                     @AuthorName NVARCHAR(100) = NULL,
@@ -236,56 +236,55 @@ namespace Bookstore.Infrastructure.Migrations
                 END
             ");
 
-            migrationBuilder.Sql(@"
+        migrationBuilder.Sql(@"
                 IF EXISTS (SELECT 1 FROM sys.fulltext_indexes WHERE object_id = OBJECT_ID('Books'))
                 BEGIN
                     DROP FULLTEXT INDEX ON Books;
                 END
             ", suppressTransaction: true);
 
-            migrationBuilder.Sql(@"
+        migrationBuilder.Sql(@"
                 IF EXISTS (SELECT 1 FROM sys.fulltext_catalogs WHERE name = 'BookstoreCatalog')
                 BEGIN
                     DROP FULLTEXT CATALOG BookstoreCatalog;
                 END
             ", suppressTransaction: true);
 
-            migrationBuilder.Sql("DROP INDEX IF EXISTS IX_Genres_Name ON Genres;");
-            migrationBuilder.Sql("DROP INDEX IF EXISTS IX_Authors_Name ON Authors;");
-            migrationBuilder.Sql("DROP INDEX IF EXISTS IX_Books_Price ON Books;");
+        migrationBuilder.Sql("DROP INDEX IF EXISTS IX_Genres_Name ON Genres;");
+        migrationBuilder.Sql("DROP INDEX IF EXISTS IX_Authors_Name ON Authors;");
+        migrationBuilder.Sql("DROP INDEX IF EXISTS IX_Books_Price ON Books;");
 
-            migrationBuilder.Sql(@"
+        migrationBuilder.Sql(@"
                 CREATE NONCLUSTERED INDEX IX_Reviews_BookId 
                 ON Reviews(BookId ASC)
                 WITH (DROP_EXISTING = ON);
             ");
 
-            migrationBuilder.AlterColumn<string>(
-                name: "Title",
-                table: "Books",
-                type: "nvarchar(max)",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(500)",
-                oldMaxLength: 500);
+        migrationBuilder.AlterColumn<string>(
+            name: "Title",
+            table: "Books",
+            type: "nvarchar(max)",
+            nullable: false,
+            oldClrType: typeof(string),
+            oldType: "nvarchar(500)",
+            oldMaxLength: 500);
 
-            migrationBuilder.AlterColumn<string>(
-                name: "Name",
-                table: "Genres",
-                type: "nvarchar(max)",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(100)",
-                oldMaxLength: 100);
+        migrationBuilder.AlterColumn<string>(
+            name: "Name",
+            table: "Genres",
+            type: "nvarchar(max)",
+            nullable: false,
+            oldClrType: typeof(string),
+            oldType: "nvarchar(100)",
+            oldMaxLength: 100);
 
-            migrationBuilder.AlterColumn<string>(
-                name: "Name",
-                table: "Authors",
-                type: "nvarchar(max)",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(200)",
-                oldMaxLength: 200);
-        }
+        migrationBuilder.AlterColumn<string>(
+            name: "Name",
+            table: "Authors",
+            type: "nvarchar(max)",
+            nullable: false,
+            oldClrType: typeof(string),
+            oldType: "nvarchar(200)",
+            oldMaxLength: 200);
     }
 }

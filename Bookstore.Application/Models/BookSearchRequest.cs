@@ -1,9 +1,10 @@
-using Bookstore.Application.Constants;
 using System.ComponentModel.DataAnnotations;
+using Bookstore.Application.Constants;
 
 namespace Bookstore.Application.Models;
 
-public record BookSearchRequest(
+public record BookSearchRequest
+(
     string? BookTitle = null,
     string? AuthorName = null,
     string? GenreName = null,

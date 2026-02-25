@@ -1,13 +1,12 @@
 using Bookstore.Application.Models;
 
-namespace Bookstore.Application.Interfaces
+namespace Bookstore.Application.Interfaces;
+
+public interface IAuthorService
 {
-    public interface IAuthorService
-    {
-        Task<IEnumerable<AuthorResponse>> GetAllAsync();
-        Task<AuthorResponse?> GetByIdAsync(int id);
-        Task<AuthorResponse> CreateAsync(AuthorCreateRequest authorCreate);
-        Task<AuthorResponse?> UpdateAsync(int id, AuthorUpdateRequest authorUpdate);
-        Task<bool> DeleteAsync(int id);
-    }
+    Task<IEnumerable<AuthorResponse>> GetAllAsync();
+    Task<AuthorResponse?> GetByIdAsync(int id);
+    Task<AuthorResponse> CreateAsync(AuthorCreateRequest authorCreate);
+    Task<AuthorResponse?> UpdateAsync(int id, AuthorUpdateRequest authorUpdate);
+    Task<bool> DeleteAsync(int id);
 }

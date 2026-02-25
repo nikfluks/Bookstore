@@ -1,4 +1,3 @@
-namespace Bookstore.Application.Models
-{
-    public record BookAuthorsUpdateRequest(List<int> AuthorIds);
-}
+namespace Bookstore.Application.Models;
+
+public record BookAuthorsUpdateRequest(IReadOnlyList<int> AuthorIds);

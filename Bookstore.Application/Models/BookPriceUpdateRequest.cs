@@ -1,4 +1,3 @@
-namespace Bookstore.Application.Models
-{
-    public record BookPriceUpdateRequest(float Price);
-}
+namespace Bookstore.Application.Models;
+
+public record BookPriceUpdateRequest(float Price);
