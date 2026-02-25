@@ -1,4 +1,4 @@
-﻿# Bookstore API
+# Bookstore API
 
 A RESTful API for managing a bookstore, providing a complete CRUD API for books, authors, genres and reviews. 
 
