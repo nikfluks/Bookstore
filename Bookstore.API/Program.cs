@@ -1,4 +1,5 @@
 using System.Globalization;
+using Asp.Versioning.ApiExplorer;
 using Bookstore.API.Extensions;
 using Bookstore.Application.Extensions;
 using Bookstore.Infrastructure.Extensions;
@@ -35,19 +36,29 @@ try
 
     app.UseSerilogRequestLogging();
 
-    if (app.Environment.IsDevelopment())
-    {
-        app.MapOpenApi();
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
-
     app.UseHttpsRedirection();
 
     app.UseAuthentication();
     app.UseAuthorization();
 
     app.MapControllers();
+
+    if (app.Environment.IsDevelopment())
+    {
+        var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+
+        app.MapOpenApi();
+        app.UseSwagger();
+        app.UseSwaggerUI(options =>
+        {
+            foreach (var groupName in provider.ApiVersionDescriptions.Select(static description => description.GroupName))
+            {
+                options.SwaggerEndpoint(
+                    $"/swagger/{groupName}/swagger.json",
+                    groupName.ToUpperInvariant());
+            }
+        });
+    }
 
     Log.Information("Bookstore API started successfully");
     await app.RunAsync();

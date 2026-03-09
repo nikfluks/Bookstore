@@ -346,6 +346,9 @@ dotnet_diagnostic.CA1724.severity = suggestion
 # S1244: Do not check floating point equality with exact values, use a range instead - acceptable
 dotnet_diagnostic.S1244.severity = silent
 
+# S125: Sections of code should not be commented out
+dotnet_diagnostic.S125.severity = suggestion
+
 # Tests
 
 [Bookstore.Tests*/**/*.cs]

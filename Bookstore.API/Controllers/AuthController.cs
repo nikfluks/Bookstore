@@ -1,10 +1,13 @@
+using Asp.Versioning;
 using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bookstore.API.Controllers;
 
-[Route("api/[controller]")]
+[ApiVersion(1.0)]
+[ApiVersion(2.0)]
+[Route("api/v{version:apiVersion}/[controller]")]
 [ApiController]
 public class AuthController(IAuthService authService) : ControllerBase
 {

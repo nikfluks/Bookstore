@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Bookstore.Application.Constants;
 using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models;
@@ -9,7 +10,9 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Bookstore.API.Controllers;
 
-[Route("api/[controller]")]
+[ApiVersion(1.0)]
+[ApiVersion(2.0)]
+[Route("api/v{version:apiVersion}/[controller]")]
 [ApiController]
 [Authorize]
 public class BooksController(IBookService bookService) : ControllerBase
@@ -22,6 +25,7 @@ public class BooksController(IBookService bookService) : ControllerBase
         return Ok(result);
     }
 
+    [MapToApiVersion(2.0)]
     [HttpGet("odata")]
     [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
     [EnableQuery(PageSize = Pagination.DefaultPageSize)]
@@ -67,6 +71,7 @@ public class BooksController(IBookService bookService) : ControllerBase
             : Ok(result);
     }
 
+    [MapToApiVersion(2.0)]
     [HttpGet("search")]
     [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
     public async Task<ActionResult<PagedResponse<BookDetailedResponse>>> SearchAsync([FromQuery] BookSearchRequest request)

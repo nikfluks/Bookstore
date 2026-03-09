@@ -1,7 +1,7 @@
-using System.Text;
-using System.Text.Json.Serialization;
+using Asp.Versioning;
 using Bookstore.API.Jobs;
 using Bookstore.API.Middleware;
+using Bookstore.API.Swagger;
 using Bookstore.Application.Constants;
 using Bookstore.Application.Models.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -10,6 +10,8 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Quartz;
+using System.Text;
+using System.Text.Json.Serialization;
 
 namespace Bookstore.API.Extensions;
 
@@ -30,18 +32,27 @@ public static class DependencyInjection
                 .SetMaxTop(Pagination.MaxPageSize)
                 .Count());
 
+        services.AddApiVersioning(options =>
+        {
+            options.DefaultApiVersion = new ApiVersion(1, 0);
+            options.AssumeDefaultVersionWhenUnspecified = true;
+            options.ReportApiVersions = true;
+            options.ApiVersionReader = new UrlSegmentApiVersionReader();
+        })
+        .AddApiExplorer(options =>
+        {
+            options.GroupNameFormat = "'v'VVV";
+            options.SubstituteApiVersionInUrl = true;
+        });
+
         services.AddOpenApi("bookstore");
         services.AddEndpointsApiExplorer();
+
+        services.ConfigureOptions<ConfigureSwaggerOptions>();
+
         services.AddSwaggerGen(c =>
         {
             c.EnableAnnotations();
-
-            c.SwaggerDoc("v1", new OpenApiInfo
-            {
-                Title = "Bookstore API",
-                Version = "v1",
-                Description = "Bookstore API with JWT Authentication."
-            });
 
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {

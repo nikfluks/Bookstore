@@ -1,14 +1,14 @@
-using System.Globalization;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using Bookstore.Application.Constants;
 using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models.Auth;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System.Globalization;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Bookstore.Application.Services;
 
@@ -40,14 +40,14 @@ internal class AuthService(IOptions<JwtSettings> jwtSettingsOption, IConfigurati
 
         var passwordHash = ComputeSha256Hash(password);
 
-        if (string.Equals(username, readUsername, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(passwordHash, readPasswordHash, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(username, readUsername, StringComparison.Ordinal)
+            && string.Equals(passwordHash, readPasswordHash, StringComparison.Ordinal))
         {
             return Roles.Read;
         }
 
-        if (string.Equals(username, adminUsername, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(passwordHash, adminPasswordHash, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(username, adminUsername, StringComparison.Ordinal)
+            && string.Equals(passwordHash, adminPasswordHash, StringComparison.Ordinal))
         {
             return Roles.ReadWrite;
         }
