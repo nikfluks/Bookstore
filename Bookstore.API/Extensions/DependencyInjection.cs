@@ -1,17 +1,23 @@
 using Asp.Versioning;
+using Bookstore.API.Constants;
 using Bookstore.API.Jobs;
 using Bookstore.API.Middleware;
 using Bookstore.API.Swagger;
 using Bookstore.Application.Constants;
 using Bookstore.Application.Models.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Quartz;
+using System.Globalization;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 
 namespace Bookstore.API.Extensions;
 
@@ -82,6 +88,13 @@ public static class DependencyInjection
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
 
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
+        });
+
         return services;
     }
 
@@ -140,5 +153,86 @@ public static class DependencyInjection
         });
 
         return services;
+    }
+
+    public static IServiceCollection AddRateLimiting(this IServiceCollection services)
+    {
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+            options.OnRejected = async (context, cancellationToken) =>
+            {
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("RateLimiting");
+
+                var retryAfterSeconds = GetRetryAfterSeconds(context);
+
+                logger.LogWarning(
+                    "Rate limit exceeded for {UserIdentity} on {Method} {Path} from {RemoteIp}. Retry after {RetryAfterSeconds}s",
+                    context.HttpContext.User.Identity?.Name ?? "anonymous",
+                    context.HttpContext.Request.Method,
+                    context.HttpContext.Request.Path,
+                    context.HttpContext.Connection.RemoteIpAddress,
+                    retryAfterSeconds);
+
+                context.HttpContext.Response.Headers.RetryAfter =
+                    retryAfterSeconds.ToString(NumberFormatInfo.InvariantInfo);
+
+                context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+
+                var problemDetails = new ProblemDetails
+                {
+                    Status = StatusCodes.Status429TooManyRequests,
+                    Title = "Too Many Requests",
+                    Detail = "Too many requests. Please try again later.",
+                };
+
+                await context.HttpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+            };
+
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = RateLimitConstants.GlobalPermitLimit,
+                        Window = RateLimitConstants.GlobalWindow,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
+
+            options.AddPolicy(RateLimitConstants.AuthenticatedPolicyName, httpContext =>
+                RateLimitPartition.GetSlidingWindowLimiter(
+                    httpContext.User.Identity?.Name ?? "anonymous",
+                    _ => new SlidingWindowRateLimiterOptions
+                    {
+                        PermitLimit = RateLimitConstants.AuthenticatedPermitLimit,
+                        Window = RateLimitConstants.AuthenticatedWindow,
+                        SegmentsPerWindow = RateLimitConstants.AuthenticatedSegmentsPerWindow,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
+        });
+
+        return services;
+    }
+
+    private static int GetRetryAfterSeconds(OnRejectedContext context)
+    {
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            return (int)retryAfter.TotalSeconds;
+        }
+
+        var endpoint = context.HttpContext.GetEndpoint();
+        var rateLimiterMetadata = endpoint?.Metadata.GetMetadata<EnableRateLimitingAttribute>();
+
+        var fallback = string.Equals(rateLimiterMetadata?.PolicyName, RateLimitConstants.AuthenticatedPolicyName, StringComparison.Ordinal)
+            ? RateLimitConstants.AuthenticatedSegmentDuration
+            : RateLimitConstants.GlobalWindow;
+
+        return (int)fallback.TotalSeconds;
     }
 }

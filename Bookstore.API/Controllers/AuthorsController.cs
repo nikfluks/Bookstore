@@ -1,9 +1,11 @@
 using Asp.Versioning;
+using Bookstore.API.Constants;
 using Bookstore.Application.Constants;
 using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Bookstore.API.Controllers;
 
@@ -11,6 +13,7 @@ namespace Bookstore.API.Controllers;
 [Route("api/v{version:apiVersion}/[controller]")]
 [ApiController]
 [Authorize]
+[EnableRateLimiting(RateLimitConstants.AuthenticatedPolicyName)]
 public class AuthorsController(IAuthorService authorService) : ControllerBase
 {
     [HttpGet]

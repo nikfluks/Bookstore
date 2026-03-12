@@ -1,9 +1,9 @@
-using System.Globalization;
 using Asp.Versioning.ApiExplorer;
 using Bookstore.API.Extensions;
 using Bookstore.Application.Extensions;
 using Bookstore.Infrastructure.Extensions;
 using Serilog;
+using System.Globalization;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
@@ -24,12 +24,15 @@ try
     builder.Services.AddApiServices();
     builder.Services.AddJwtAuthentication(builder.Configuration);
     builder.Services.AddQuartzScheduling();
+    builder.Services.AddRateLimiting();
     builder.Services.AddAppServices();
     builder.Services.AddInfrastructure(builder.Configuration);
 
     var app = builder.Build();
 
     await app.ApplyDatabaseMigrationsAsync();
+
+    app.UseForwardedHeaders();
 
     app.UseExceptionHandler();
     app.UseStatusCodePages();
@@ -39,6 +42,7 @@ try
     app.UseHttpsRedirection();
 
     app.UseAuthentication();
+    app.UseRateLimiter();
     app.UseAuthorization();
 
     app.MapControllers();

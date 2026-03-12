@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using Bookstore.API.Constants;
 using Bookstore.Application.Constants;
 using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models;
@@ -6,6 +7,7 @@ using Bookstore.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
+using Microsoft.AspNetCore.RateLimiting;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Bookstore.API.Controllers;
@@ -15,6 +17,7 @@ namespace Bookstore.API.Controllers;
 [Route("api/v{version:apiVersion}/[controller]")]
 [ApiController]
 [Authorize]
+[EnableRateLimiting(RateLimitConstants.AuthenticatedPolicyName)]
 public class BooksController(IBookService bookService) : ControllerBase
 {
     [HttpGet]
