@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Quartz;
@@ -105,8 +104,8 @@ public static class DependencyInjection
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        var serviceProvider = services.BuildServiceProvider();
-        var jwtSettings = serviceProvider.GetRequiredService<IOptions<JwtSettings>>().Value;
+        var jwtSettings = configuration.GetSection(nameof(JwtSettings)).Get<JwtSettings>()
+            ?? throw new InvalidOperationException("JwtSettings configuration section is missing or invalid.");
 
         services.AddAuthentication(options =>
         {
@@ -124,7 +123,8 @@ public static class DependencyInjection
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = jwtSettings.Issuer,
                 ValidAudience = jwtSettings.Audience,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret))
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
+                ClockSkew = TimeSpan.Zero
             };
         });
 

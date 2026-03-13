@@ -1,8 +1,8 @@
 using Asp.Versioning;
 using Bookstore.API.Constants;
+using Bookstore.Application.Constants;
 using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models;
-using Bookstore.Application.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -38,15 +38,17 @@ public class ReviewsController(IReviewService reviewService) : ControllerBase
     [Authorize(Roles = Roles.ReadWrite)]
     public async Task<ActionResult<ReviewResponse>> CreateAsync(ReviewCreateRequest reviewCreate)
     {
-        try
+        var result = await reviewService.CreateAsync(reviewCreate);
+
+        if (!result.IsSuccessful)
         {
-            var result = await reviewService.CreateAsync(reviewCreate);
-            return CreatedAtAction(nameof(GetByIdAsync), new { id = result.Id }, result);
+            return Problem(
+                detail: result.ErrorMessage,
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Bad Request");
         }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+
+        return CreatedAtAction(nameof(GetByIdAsync), new { id = result.Review!.Id }, result.Review);
     }
 
     [HttpPut("{id}")]

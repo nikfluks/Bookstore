@@ -1,6 +1,7 @@
 using Asp.Versioning.ApiExplorer;
 using Bookstore.API.Extensions;
 using Bookstore.Application.Extensions;
+using Bookstore.Application.Interfaces;
 using Bookstore.Infrastructure.Extensions;
 using Serilog;
 using System.Globalization;
@@ -31,6 +32,13 @@ try
     var app = builder.Build();
 
     await app.ApplyDatabaseMigrationsAsync();
+
+    if (app.Environment.IsDevelopment())
+    {
+        using var seederScope = app.Services.CreateScope();
+        var seeder = seederScope.ServiceProvider.GetRequiredService<IIdentitySeeder>();
+        await seeder.SeedAsync();
+    }
 
     app.UseForwardedHeaders();
 
@@ -67,7 +75,7 @@ try
     Log.Information("Bookstore API started successfully");
     await app.RunAsync();
 }
-catch (Exception ex)
+catch (Exception ex) when (ex is not HostAbortedException)
 {
     Log.Fatal(ex, "Bookstore API failed to start");
     throw;

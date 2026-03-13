@@ -337,7 +337,7 @@ dotnet_diagnostic.CA1848.severity = silent
 # S2139: Exceptions should be either logged or rethrown but not both - acceptable for API requests
 dotnet_diagnostic.S2139.severity = silent
 
-# MA0007 - Add a comma after the last value - acceptable
+# MA0007: Add a comma after the last value - acceptable
 dotnet_diagnostic.MA0007.severity = silent
 
 # CA1724: Type names should not match namespaces - acceptable for some classes eg. DependencyInjection
@@ -348,6 +348,9 @@ dotnet_diagnostic.S1244.severity = silent
 
 # S125: Sections of code should not be commented out
 dotnet_diagnostic.S125.severity = suggestion
+
+# CA1812: Avoid uninstantiated internal classes - acceptable for instantiating via DI
+dotnet_diagnostic.CA1812.severity = suggestion
 
 # Tests
 
@@ -363,5 +366,9 @@ dotnet_diagnostic.IDE1006.severity = silent
 
 [Bookstore.Infrastructure/Migrations/*.cs]
 
-# MA0048 - File name must match type name - acceptable for migration classes
+# MA0048: File name must match type name - acceptable for migration classes
 dotnet_diagnostic.MA0048.severity = silent
+
+# Migrations are by default created as Block scoped so following build would fail
+csharp_style_namespace_declarations = file_scoped:suggestion
+

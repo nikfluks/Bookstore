@@ -1,82 +1,81 @@
 using Bookstore.Application.Constants;
 using Bookstore.Application.Interfaces;
 using Bookstore.Application.Models.Auth;
-using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace Bookstore.Application.Services;
 
-internal class AuthService(IOptions<JwtSettings> jwtSettingsOption, IConfiguration configuration) : IAuthService
+internal class AuthService(
+    UserManager<IdentityUser> userManager,
+    SignInManager<IdentityUser> signInManager,
+    IOptions<JwtSettings> jwtSettingsOption) : IAuthService
 {
     private readonly JwtSettings jwtSettings = jwtSettingsOption.Value;
 
-    public Task<AuthenticationResult> AuthenticateAsync(LoginRequest request)
+    public async Task<AuthenticationResult> AuthenticateAsync(LoginRequest request)
     {
-        var role = ValidateUser(request.Username, request.Password);
+        var user = await userManager.FindByNameAsync(request.Username);
 
-        if (role == null)
+        if (user is null)
         {
-            return Task.FromResult(AuthenticationResult.Failure("Invalid username or password"));
+            return AuthenticationResult.Failure("Invalid username or password");
         }
 
-        var token = GenerateJwtToken(request.Username, role);
+        var result = await signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: true);
+
+        if (!result.Succeeded)
+        {
+            return AuthenticationResult.Failure("Invalid username or password");
+        }
+
+        var roles = await userManager.GetRolesAsync(user);
+        var token = GenerateJwtToken(user.UserName!, roles);
         var expiresAtUtc = DateTime.UtcNow.AddMinutes(jwtSettings.ExpirationMinutes);
 
-        return Task.FromResult(AuthenticationResult.Success(token, role, expiresAtUtc));
+        return AuthenticationResult.Success(token, string.Join(",", roles), expiresAtUtc);
     }
 
-    private string? ValidateUser(string username, string password)
+    /// <summary>
+    /// By default, assign the "Read" role to new users. Adjust as needed.
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    public async Task<RegisterResult> RegisterAsync(RegisterRequest request)
     {
-        var readUsername = configuration["UsersAuth:ReadUser:Username"];
-        var readPasswordHash = configuration["UsersAuth:ReadUser:PasswordHash"];
-        var adminUsername = configuration["UsersAuth:AdminUser:Username"];
-        var adminPasswordHash = configuration["UsersAuth:AdminUser:PasswordHash"];
+        var user = new IdentityUser { UserName = request.Username };
+        var result = await userManager.CreateAsync(user, request.Password);
 
-        var passwordHash = ComputeSha256Hash(password);
-
-        if (string.Equals(username, readUsername, StringComparison.Ordinal)
-            && string.Equals(passwordHash, readPasswordHash, StringComparison.Ordinal))
+        if (!result.Succeeded)
         {
-            return Roles.Read;
+            var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+            return RegisterResult.Failure(errors);
         }
 
-        if (string.Equals(username, adminUsername, StringComparison.Ordinal)
-            && string.Equals(passwordHash, adminPasswordHash, StringComparison.Ordinal))
-        {
-            return Roles.ReadWrite;
-        }
+        await userManager.AddToRoleAsync(user, Roles.Read);
 
-        return null;
+        return RegisterResult.Success();
     }
 
-    private static string ComputeSha256Hash(string input)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
-        var builder = new StringBuilder();
-        foreach (var b in bytes)
-        {
-            builder.Append(b.ToString("x2", CultureInfo.InvariantCulture));
-        }
-        return builder.ToString();
-    }
-
-    private string GenerateJwtToken(string username, string role)
+    private string GenerateJwtToken(string username, IList<string> roles)
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Name, username),
-            new Claim(ClaimTypes.Role, role),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(ClaimTypes.Name, username),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var token = new JwtSecurityToken
         (

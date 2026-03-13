@@ -27,6 +27,7 @@
     <PackageVersion Include="Microsoft.Extensions.Options" Version="9.0.10" />
 
     <!-- Security -->
+    <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.10" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
 
     <!-- Logging -->

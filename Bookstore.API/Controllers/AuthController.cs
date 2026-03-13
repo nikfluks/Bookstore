@@ -18,7 +18,10 @@ public class AuthController(IAuthService authService) : ControllerBase
 
         if (!result.IsAuthenticated)
         {
-            return Unauthorized(new { message = result.ErrorMessage });
+            return Problem(
+                detail: result.ErrorMessage,
+                statusCode: StatusCodes.Status401Unauthorized,
+                title: "Unauthorized");
         }
 
         return Ok(new LoginResponse
@@ -27,5 +30,21 @@ public class AuthController(IAuthService authService) : ControllerBase
             Role = result.Role!,
             ExpiresAtUtc = result.ExpiresAtUtc!.Value
         });
+    }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> RegisterAsync([FromBody] RegisterRequest request)
+    {
+        var result = await authService.RegisterAsync(request);
+
+        if (!result.IsSuccessful)
+        {
+            return Problem(
+                detail: result.ErrorMessage,
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Bad Request");
+        }
+
+        return Created();
     }
 }

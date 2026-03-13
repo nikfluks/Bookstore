@@ -55,7 +55,7 @@ internal class ReviewService(IAppDbContext db, ILogger<ReviewService> logger) : 
         }
     }
 
-    public async Task<ReviewResponse> CreateAsync(ReviewCreateRequest reviewCreate)
+    public async Task<ReviewCreateResult> CreateAsync(ReviewCreateRequest reviewCreate)
     {
         logger.LogInformation("Creating new review for book Id: {BookId}", reviewCreate.BookId);
 
@@ -65,7 +65,7 @@ internal class ReviewService(IAppDbContext db, ILogger<ReviewService> logger) : 
             if (book is null)
             {
                 logger.LogWarning("Cannot create review - Book with Id: {BookId} not found", reviewCreate.BookId);
-                throw new ArgumentException($"Book with ID {reviewCreate.BookId} not found.", nameof(reviewCreate));
+                return ReviewCreateResult.Failure($"Book with ID {reviewCreate.BookId} not found.");
             }
 
             var review = new Review
@@ -78,11 +78,7 @@ internal class ReviewService(IAppDbContext db, ILogger<ReviewService> logger) : 
             await db.SaveChangesAsync();
 
             logger.LogInformation("Successfully created review with Id: {ReviewId} for book: {BookTitle}", review.Id, book.Title);
-            return new ReviewResponse(review.Id, review.Description, review.Rating, book.Title);
-        }
-        catch (ArgumentException)
-        {
-            throw;
+            return ReviewCreateResult.Success(new ReviewResponse(review.Id, review.Description, review.Rating, book.Title));
         }
         catch (Exception ex)
         {
