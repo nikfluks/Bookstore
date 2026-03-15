@@ -22,7 +22,7 @@ public class BooksController(IBookService bookService) : ControllerBase
 {
     [HttpGet]
     [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
-    public async Task<ActionResult<PagedResponse<BookResponse>>> GetAllAsync([FromQuery] PagedRequest request)
+    public async Task<ActionResult<PagedResponse<BookResponse>>> GetAll([FromQuery] PagedRequest request)
     {
         var result = await bookService.GetAllAsync(request);
         return Ok(result);
@@ -49,7 +49,7 @@ public class BooksController(IBookService bookService) : ControllerBase
 
     [HttpGet("details")]
     [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
-    public async Task<ActionResult<PagedResponse<BookDetailedResponse>>> GetAllDetailedAsync([FromQuery] PagedRequest request)
+    public async Task<ActionResult<PagedResponse<BookDetailedResponse>>> GetAllDetailed([FromQuery] PagedRequest request)
     {
         var result = await bookService.GetAllDetailedAsync(request);
         return Ok(result);
@@ -58,7 +58,7 @@ public class BooksController(IBookService bookService) : ControllerBase
     [HttpGet("top-10")]
     [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
     [SwaggerOperation(Summary = "Gets top 10 books by average rating")]
-    public async Task<ActionResult<IEnumerable<BookDetailedResponse>>> GetTop10ByRatingAsync()
+    public async Task<ActionResult<IEnumerable<BookDetailedResponse>>> GetTop10ByRating()
     {
         var result = await bookService.GetTop10ByRatingAsync();
         return Ok(result);
@@ -66,7 +66,7 @@ public class BooksController(IBookService bookService) : ControllerBase
 
     [HttpGet("{id}")]
     [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
-    public async Task<ActionResult<BookResponse>> GetByIdAsync(int id)
+    public async Task<ActionResult<BookResponse>> GetById(int id)
     {
         var result = await bookService.GetByIdAsync(id);
         return result is null
@@ -77,7 +77,7 @@ public class BooksController(IBookService bookService) : ControllerBase
     [MapToApiVersion(2.0)]
     [HttpGet("search")]
     [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
-    public async Task<ActionResult<PagedResponse<BookDetailedResponse>>> SearchAsync([FromQuery] BookSearchRequest request)
+    public async Task<ActionResult<PagedResponse<BookDetailedResponse>>> Search([FromQuery] BookSearchRequest request)
     {
         var result = await bookService.SearchBooksAsync(request);
         return Ok(result);
@@ -85,15 +85,15 @@ public class BooksController(IBookService bookService) : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = Roles.ReadWrite)]
-    public async Task<ActionResult<BookDetailedResponse>> CreateAsync(BookCreateRequest bookCreate)
+    public async Task<ActionResult<BookDetailedResponse>> Create(BookCreateRequest bookCreate)
     {
         var result = await bookService.CreateAsync(bookCreate);
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = result.Id }, result);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     [HttpPut("{id}")]
     [Authorize(Roles = Roles.ReadWrite)]
-    public async Task<ActionResult<BookResponse>> UpdateAsync(int id, BookPriceUpdateRequest priceUpdate)
+    public async Task<ActionResult<BookResponse>> Update(int id, BookPriceUpdateRequest priceUpdate)
     {
         var result = await bookService.UpdateAsync(id, priceUpdate);
         return result is null
@@ -103,7 +103,7 @@ public class BooksController(IBookService bookService) : ControllerBase
 
     [HttpDelete("{id}")]
     [Authorize(Roles = Roles.ReadWrite)]
-    public async Task<IActionResult> DeleteAsync(int id)
+    public async Task<IActionResult> Delete(int id)
     {
         return await bookService.DeleteAsync(id)
             ? NoContent()
@@ -112,7 +112,7 @@ public class BooksController(IBookService bookService) : ControllerBase
 
     [HttpPut("{id}/authors")]
     [Authorize(Roles = Roles.ReadWrite)]
-    public async Task<ActionResult<BookDetailedResponse>> UpdateAuthorsAsync(int id, BookAuthorsUpdateRequest authorsUpdate)
+    public async Task<ActionResult<BookDetailedResponse>> UpdateAuthors(int id, BookAuthorsUpdateRequest authorsUpdate)
     {
         var result = await bookService.UpdateAuthorsAsync(id, authorsUpdate);
         return result is null
@@ -122,7 +122,7 @@ public class BooksController(IBookService bookService) : ControllerBase
 
     [HttpPut("{id}/genres")]
     [Authorize(Roles = Roles.ReadWrite)]
-    public async Task<ActionResult<BookDetailedResponse>> UpdateGenresAsync(int id, BookGenresUpdateRequest genresUpdate)
+    public async Task<ActionResult<BookDetailedResponse>> UpdateGenres(int id, BookGenresUpdateRequest genresUpdate)
     {
         var result = await bookService.UpdateGenresAsync(id, genresUpdate);
         return result is null

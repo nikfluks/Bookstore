@@ -39,29 +39,29 @@ public partial class CreateIndexes : Migration
             oldType: "nvarchar(max)");
 
         migrationBuilder.Sql(@"
+                DROP INDEX IF EXISTS IX_Reviews_BookId ON Reviews;
                 CREATE NONCLUSTERED INDEX IX_Reviews_BookId 
                 ON Reviews(BookId ASC)
-                INCLUDE (Rating)
-                WITH (DROP_EXISTING = ON);
+                INCLUDE (Rating);
             ");
 
         migrationBuilder.Sql(@"
+                DROP INDEX IF EXISTS IX_Books_Price ON Books;
                 CREATE NONCLUSTERED INDEX IX_Books_Price 
                 ON Books(Price ASC)
-                INCLUDE (Title)
-                WITH (DROP_EXISTING = ON);
+                INCLUDE (Title);
             ");
 
         migrationBuilder.Sql(@"
+                DROP INDEX IF EXISTS IX_Authors_Name ON Authors;
                 CREATE NONCLUSTERED INDEX IX_Authors_Name 
-                ON Authors(Name ASC)
-                WITH (DROP_EXISTING = ON);
+                ON Authors(Name ASC);
             ");
 
         migrationBuilder.Sql(@"
+                DROP INDEX IF EXISTS IX_Genres_Name ON Genres;
                 CREATE NONCLUSTERED INDEX IX_Genres_Name 
-                ON Genres(Name ASC)
-                WITH (DROP_EXISTING = ON);
+                ON Genres(Name ASC);
             ");
 
         // Create full-text catalog (must run outside transaction)
@@ -255,9 +255,9 @@ public partial class CreateIndexes : Migration
         migrationBuilder.Sql("DROP INDEX IF EXISTS IX_Books_Price ON Books;");
 
         migrationBuilder.Sql(@"
+                DROP INDEX IF EXISTS IX_Reviews_BookId ON Reviews;
                 CREATE NONCLUSTERED INDEX IX_Reviews_BookId 
-                ON Reviews(BookId ASC)
-                WITH (DROP_EXISTING = ON);
+                ON Reviews(BookId ASC);
             ");
 
         migrationBuilder.AlterColumn<string>(

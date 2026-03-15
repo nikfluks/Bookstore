@@ -1,337 +1,307 @@
 using Bookstore.Application.Models;
-using Bookstore.Application.Services;
-using Bookstore.Domain.Entities;
 using Bookstore.Tests.Integration.Helpers;
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Abstractions;
+using System.Net;
+using System.Net.Http.Json;
 
 namespace Bookstore.Tests.Integration.Services;
 
 [Trait("Category", "Integration")]
 public class BookServiceIntegrationTests : IntegrationTestBase
 {
-    private readonly BookService bookService;
+    #region Helper Methods
 
-    public BookServiceIntegrationTests()
+    private async Task<AuthorResponse> CreateAuthorAsync(string name, int birthYear)
     {
-        var logger = NullLogger<BookService>.Instance;
-        bookService = new BookService(DbContext, logger);
+        return await PostAsync<AuthorResponse>("authors", new AuthorCreateRequest(name, birthYear));
     }
+
+    private async Task<GenreResponse> CreateGenreAsync(string name)
+    {
+        return await PostAsync<GenreResponse>("genres", new GenreCreateRequest(name));
+    }
+
+    private async Task<BookDetailedResponse> CreateBookAsync(string title, float price, int[] authorIds, int[] genreIds)
+    {
+        var request = new BookCreateRequest(title, price, authorIds, genreIds);
+        return await PostAsync<BookDetailedResponse>("books", request);
+    }
+
+    private async Task<ReviewResponse> CreateReviewAsync(int bookId, int rating, string? description = null)
+    {
+        var request = new ReviewCreateRequest(description, rating, bookId);
+        return await PostAsync<ReviewResponse>("reviews", request);
+    }
+
+    #endregion
 
     #region GetTop10ByRatingAsync Tests
 
     [Fact]
     public async Task GetTop10ByRatingAsync_ShouldReturnEmptyList_WhenNoBooksExist()
     {
-        var result = await bookService.GetTop10ByRatingAsync();
+        var result = await GetListAsync<BookDetailedResponse>("books/top-10");
 
         result.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task GetTop10ByRatingAsync_ShouldReturnBooksOrderedByRating()
+    public async Task GetTop10ByRatingAsync_ShouldReturnBooksOrderedByAverageRating()
     {
-        var author = new Author { Name = "Test Author", BirthYear = 1980 };
-        var genre = new Genre { Name = "Fiction" };
+        var author = await CreateAuthorAsync("Test Author", 1980);
+        var genre = await CreateGenreAsync("Fiction");
 
-        var book1 = new Book { Title = "Low Rated Book", Price = 10.99f };
-        book1.Authors.Add(author);
-        book1.Genres.Add(genre);
+        var book1 = await CreateBookAsync("Low Rated Book", 10.99f, [author.Id], [genre.Id]);
+        var book2 = await CreateBookAsync("High Rated Book", 15.99f, [author.Id], [genre.Id]);
+        var book3 = await CreateBookAsync("Medium Rated Book", 12.99f, [author.Id], [genre.Id]);
 
-        var book2 = new Book { Title = "High Rated Book", Price = 15.99f };
-        book2.Authors.Add(author);
-        book2.Genres.Add(genre);
+        await CreateReviewAsync(book1.Id, 2);
+        await CreateReviewAsync(book2.Id, 5);
+        await CreateReviewAsync(book2.Id, 5);
+        await CreateReviewAsync(book3.Id, 3);
+        await CreateReviewAsync(book3.Id, 4);
 
-        var book3 = new Book { Title = "Medium Rated Book", Price = 12.99f };
-        book3.Authors.Add(author);
-        book3.Genres.Add(genre);
+        var result = await GetListAsync<BookDetailedResponse>("books/top-10");
 
-        DbContext.Authors.Add(author);
-        DbContext.Genres.Add(genre);
-        DbContext.Books.AddRange(book1, book2, book3);
-        await DbContext.SaveChangesAsync();
-
-        var review1 = new Review { Rating = 2, Book = book1 };
-        var review2 = new Review { Rating = 5, Book = book2 };
-        var review3 = new Review { Rating = 5, Book = book2 };
-        var review4 = new Review { Rating = 3, Book = book3 };
-        var review5 = new Review { Rating = 4, Book = book3 };
-
-        DbContext.Reviews.AddRange(review1, review2, review3, review4, review5);
-        await DbContext.SaveChangesAsync();
-
-        var result = await bookService.GetTop10ByRatingAsync();
-
-        var booksList = result.ToList();
-        booksList.Should().HaveCount(3);
-        booksList[0].Title.Should().Be("High Rated Book");
-        booksList[0].AverageRating.Should().Be(5.0);
-        booksList[1].Title.Should().Be("Medium Rated Book");
-        booksList[1].AverageRating.Should().Be(3.5);
-        booksList[2].Title.Should().Be("Low Rated Book");
-        booksList[2].AverageRating.Should().Be(2.0);
+        result.Should().HaveCount(3);
+        result[0].Title.Should().Be("High Rated Book");
+        result[0].AverageRating.Should().Be(5.0);
+        result[1].Title.Should().Be("Medium Rated Book");
+        result[1].AverageRating.Should().Be(3.5);
+        result[2].Title.Should().Be("Low Rated Book");
+        result[2].AverageRating.Should().Be(2.0);
     }
 
     [Fact]
     public async Task GetTop10ByRatingAsync_ShouldLimitResultsTo10Books()
     {
-        var author = new Author { Name = "Test Author", BirthYear = 1980 };
-        DbContext.Authors.Add(author);
-        await DbContext.SaveChangesAsync();
+        var author = await CreateAuthorAsync("Test Author", 1980);
 
-        var books = new List<Book>();
+        var bookIds = new List<int>();
         for (var i = 1; i <= 15; i++)
         {
-            var book = new Book
-            {
-                Title = $"Book {i}",
-                Price = 10.99f
-            };
-            book.Authors.Add(author);
-            books.Add(book);
+            var book = await CreateBookAsync($"Book {i}", 10.99f, [author.Id], []);
+            bookIds.Add(book.Id);
         }
-
-        DbContext.Books.AddRange(books);
-        await DbContext.SaveChangesAsync();
 
         for (var i = 0; i < 15; i++)
         {
-            var review = new Review
-            {
-                // Creates ratings: 5, 5, 5, 4, 4, 4, 3, 3, 3, 2, 2, 2, 1, 1, 1
-                Rating = 5 - (i / 3),
-                Book = books[i]
-            };
-            DbContext.Reviews.Add(review);
+            await CreateReviewAsync(bookIds[i], 5 - (i / 3));
         }
-        await DbContext.SaveChangesAsync();
 
-        var result = await bookService.GetTop10ByRatingAsync();
+        var result = await GetListAsync<BookDetailedResponse>("books/top-10");
 
         result.Should().HaveCount(10);
     }
 
+    #endregion
+
+    #region CRUD & Status Code Tests
+
     [Fact]
-    public async Task GetTop10ByRatingAsync_ShouldHandleBooksWithoutReviews()
+    public async Task CreateBook_ShouldReturn201Created()
     {
-        var author = new Author { Name = "Test Author", BirthYear = 1980 };
-        DbContext.Authors.Add(author);
-        await DbContext.SaveChangesAsync();
+        var author = await CreateAuthorAsync("Author", 1980);
+        var genre = await CreateGenreAsync("Genre");
 
-        var bookWithReviews = new Book { Title = "Book With Reviews", Price = 10.99f };
-        bookWithReviews.Authors.Add(author);
+        using var response = await SendAsync(HttpMethod.Post, "books",
+            new BookCreateRequest("New Book", 19.99f, [author.Id], [genre.Id]));
 
-        var bookWithoutReviews = new Book { Title = "Book Without Reviews", Price = 12.99f };
-        bookWithoutReviews.Authors.Add(author);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.Should().NotBeNull();
 
-        DbContext.Books.AddRange(bookWithReviews, bookWithoutReviews);
-        await DbContext.SaveChangesAsync();
-
-        var review = new Review { Rating = 5, Book = bookWithReviews };
-        DbContext.Reviews.Add(review);
-        await DbContext.SaveChangesAsync();
-
-        var result = await bookService.GetTop10ByRatingAsync();
-
-        var booksList = result.ToList();
-        booksList.Should().HaveCount(2);
-        booksList[0].Title.Should().Be("Book With Reviews");
-        booksList[0].AverageRating.Should().Be(5.0);
-        booksList[1].Title.Should().Be("Book Without Reviews");
-        booksList[1].AverageRating.Should().Be(0.0);
+        var created = await response.Content.ReadFromJsonAsync<BookDetailedResponse>();
+        created!.Title.Should().Be("New Book");
     }
 
     [Fact]
-    public async Task GetTop10ByRatingAsync_ShouldIncludeAllAuthorsAndGenres()
+    public async Task GetBookById_ShouldReturn200WithBook()
     {
-        var author1 = new Author { Name = "Author 1", BirthYear = 1980 };
-        var author2 = new Author { Name = "Author 2", BirthYear = 1990 };
-        var genre1 = new Genre { Name = "Fiction" };
-        var genre2 = new Genre { Name = "Mystery" };
+        var author = await CreateAuthorAsync("Author", 1985);
+        var book = await CreateBookAsync("Existing Book", 14.99f, [author.Id], []);
 
-        var book = new Book { Title = "Multi Author Genre Book", Price = 10.99f };
-        book.Authors.Add(author1);
-        book.Authors.Add(author2);
-        book.Genres.Add(genre1);
-        book.Genres.Add(genre2);
+        using var response = await SendAsync(HttpMethod.Get, $"books/{book.Id}");
 
-        DbContext.Authors.AddRange(author1, author2);
-        DbContext.Genres.AddRange(genre1, genre2);
-        DbContext.Books.Add(book);
-        await DbContext.SaveChangesAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<BookResponse>();
+        result!.Title.Should().Be("Existing Book");
+    }
 
-        var review = new Review { Rating = 5, Book = book };
-        DbContext.Reviews.Add(review);
-        await DbContext.SaveChangesAsync();
+    [Fact]
+    public async Task GetBookById_ShouldReturn404_WhenBookDoesNotExist()
+    {
+        using var response = await SendAsync(HttpMethod.Get, "books/999999");
 
-        var result = await bookService.GetTop10ByRatingAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
 
-        var booksList = result.ToList();
-        booksList.Should().ContainSingle();
-        booksList[0].AuthorNames.Should().HaveCount(2);
-        booksList[0].AuthorNames.Should().Contain(["Author 1", "Author 2"]);
-        booksList[0].GenreNames.Should().HaveCount(2);
-        booksList[0].GenreNames.Should().Contain(["Fiction", "Mystery"]);
+    [Fact]
+    public async Task UpdateBookPrice_ShouldReturn200WithUpdatedPrice()
+    {
+        var author = await CreateAuthorAsync("Author", 1985);
+        var book = await CreateBookAsync("Priced Book", 10.00f, [author.Id], []);
+
+        using var response = await SendAsync(HttpMethod.Put, $"books/{book.Id}",
+            new BookPriceUpdateRequest(25.00f));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<BookResponse>();
+        result!.Price.Should().Be(25.00f);
+    }
+
+    [Fact]
+    public async Task UpdateBookPrice_ShouldReturn404_WhenBookDoesNotExist()
+    {
+        using var response = await SendAsync(HttpMethod.Put, "books/999999",
+            new BookPriceUpdateRequest(25.00f));
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteBook_ShouldReturn204NoContent()
+    {
+        var author = await CreateAuthorAsync("Author", 1985);
+        var book = await CreateBookAsync("To Delete", 10.00f, [author.Id], []);
+
+        using var response = await SendAsync(HttpMethod.Delete, $"books/{book.Id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    [Fact]
+    public async Task DeleteBook_ShouldReturn404_WhenBookDoesNotExist()
+    {
+        using var response = await SendAsync(HttpMethod.Delete, "books/999999");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetAllDetailed_ShouldReturnPagedResponse()
+    {
+        var author = await CreateAuthorAsync("Author", 1980);
+        var genre = await CreateGenreAsync("Genre");
+        var book = await CreateBookAsync("Detailed Book", 10.99f, [author.Id], [genre.Id]);
+
+        await CreateReviewAsync(book.Id, 4);
+
+        var result = await GetAsync<PagedResponse<BookDetailedResponse>>("books/details");
+
+        result.Items.Should().ContainSingle();
+        result.Items.First().Title.Should().Be("Detailed Book");
+        result.Items.First().AverageRating.Should().Be(4.0);
     }
 
     #endregion
 
-    #region GetAllDetailedAsync Integration Tests
+    #region Authentication Tests
 
     [Fact]
-    public async Task GetAllDetailedAsync_ShouldWorkWithRealDatabase()
+    public async Task AnonymousRequest_ShouldReturn401Unauthorized()
     {
-        var author = new Author { Name = "Integration Test Author", BirthYear = 1980 };
-        var genre = new Genre { Name = "Integration Test Genre" };
+        ClearAuthentication();
 
-        var book = new Book { Title = "Integration Test Book", Price = 10.99f };
-        book.Authors.Add(author);
-        book.Genres.Add(genre);
+        using var response = await SendAsync(HttpMethod.Get, "books/top-10");
 
-        DbContext.Authors.Add(author);
-        DbContext.Genres.Add(genre);
-        DbContext.Books.Add(book);
-        await DbContext.SaveChangesAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
 
-        var review = new Review { Rating = 4, Book = book };
-        DbContext.Reviews.Add(review);
-        await DbContext.SaveChangesAsync();
+    [Fact]
+    public async Task AnonymousPost_ShouldReturn401Unauthorized()
+    {
+        ClearAuthentication();
 
-        var result = await bookService.GetAllDetailedAsync(new PagedRequest());
+        using var response = await SendAsync(HttpMethod.Post, "books",
+            new BookCreateRequest("Anon Book", 10.00f));
 
-        var booksList = result.Items.ToList();
-        booksList.Should().ContainSingle();
-        booksList[0].Title.Should().Be("Integration Test Book");
-        booksList[0].AverageRating.Should().Be(4.0);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     #endregion
 
-    #region Complex Scenario Tests
+    #region Reader Role Authorization Tests
 
     [Fact]
-    public async Task ComplexScenario_CreateUpdateAndVerifyRanking()
+    public async Task ReaderCanGetBooks()
     {
-        var author = new Author { Name = "Prolific Author", BirthYear = 1975 };
-        var genre = new Genre { Name = "Bestseller" };
+        await AuthenticateAsReaderAsync();
 
-        DbContext.Authors.Add(author);
-        DbContext.Genres.Add(genre);
-        await DbContext.SaveChangesAsync();
+        using var response = await SendAsync(HttpMethod.Get, "books/top-10");
 
-        // Act - Create books through service
-        var createRequest1 = new BookCreateRequest
-        (
-            "First Book",
-            19.99f,
-            [author.Id],
-            [genre.Id]
-        );
-        var book1 = await bookService.CreateAsync(createRequest1);
-
-        var createRequest2 = new BookCreateRequest
-        (
-           "Second Book",
-           24.99f,
-           [author.Id],
-           [genre.Id]
-        );
-        var book2 = await bookService.CreateAsync(createRequest2);
-
-        var book1Entity = await DbContext.Books.FindAsync(book1.Id);
-        var book2Entity = await DbContext.Books.FindAsync(book2.Id);
-
-        DbContext.Reviews.Add(new Review { Rating = 5, Book = book1Entity! });
-        DbContext.Reviews.Add(new Review { Rating = 5, Book = book1Entity! });
-        DbContext.Reviews.Add(new Review { Rating = 4, Book = book1Entity! });
-
-        DbContext.Reviews.Add(new Review { Rating = 3, Book = book2Entity! });
-        DbContext.Reviews.Add(new Review { Rating = 3, Book = book2Entity! });
-        await DbContext.SaveChangesAsync();
-
-        var topBooks = await bookService.GetTop10ByRatingAsync();
-
-        var topBooksList = topBooks.ToList();
-        topBooksList.Should().HaveCount(2);
-        topBooksList[0].Title.Should().Be("First Book");
-        topBooksList[0].AverageRating.Should().BeApproximately(4.67, 0.01);
-        topBooksList[1].Title.Should().Be("Second Book");
-        topBooksList[1].AverageRating.Should().Be(3.0);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
+
+    [Fact]
+    public async Task ReaderCannotCreateBook_ShouldReturn403Forbidden()
+    {
+        var author = await CreateAuthorAsync("Author", 1980);
+
+        await AuthenticateAsReaderAsync();
+
+        using var response = await SendAsync(HttpMethod.Post, "books",
+            new BookCreateRequest("Forbidden Book", 10.00f, [author.Id]));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task ReaderCannotUpdateBook_ShouldReturn403Forbidden()
+    {
+        var author = await CreateAuthorAsync("Author", 1985);
+        var book = await CreateBookAsync("Book", 10.00f, [author.Id], []);
+
+        await AuthenticateAsReaderAsync();
+
+        using var response = await SendAsync(HttpMethod.Put, $"books/{book.Id}",
+            new BookPriceUpdateRequest(99.00f));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task ReaderCannotDeleteBook_ShouldReturn403Forbidden()
+    {
+        var author = await CreateAuthorAsync("Author", 1985);
+        var book = await CreateBookAsync("Book", 10.00f, [author.Id], []);
+
+        await AuthenticateAsReaderAsync();
+
+        using var response = await SendAsync(HttpMethod.Delete, $"books/{book.Id}");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task ReaderCannotCreateReview_ShouldReturn403Forbidden()
+    {
+        var author = await CreateAuthorAsync("Author", 1985);
+        var book = await CreateBookAsync("Book", 10.00f, [author.Id], []);
+
+        await AuthenticateAsReaderAsync();
+
+        using var response = await SendAsync(HttpMethod.Post, "reviews",
+            new ReviewCreateRequest(null, 5, book.Id));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    #endregion
+
+    #region Database Isolation Test
 
     [Fact]
     public async Task DatabaseCleanup_ShouldIsolateTests()
     {
-        var books = await DbContext.Books.ToListAsync();
-        var authors = await DbContext.Authors.ToListAsync();
-        var genres = await DbContext.Genres.ToListAsync();
-        var reviews = await DbContext.Reviews.ToListAsync();
+        var booksResponse = await GetListAsync<BookDetailedResponse>("books/top-10");
+        var authorsResponse = await GetListAsync<AuthorResponse>("authors");
+        var genresResponse = await GetListAsync<GenreResponse>("genres");
+        var reviewsResponse = await GetListAsync<ReviewResponse>("reviews");
 
-        books.Should().BeEmpty("Each test should start with a clean database");
-        authors.Should().BeEmpty("Each test should start with a clean database");
-        genres.Should().BeEmpty("Each test should start with a clean database");
-        reviews.Should().BeEmpty("Each test should start with a clean database");
-    }
-
-    #endregion
-
-    #region Edge Cases
-
-    [Fact]
-    public async Task GetTop10ByRatingAsync_ShouldHandleIdenticalRatings()
-    {
-        var author = new Author { Name = "Test Author", BirthYear = 1980 };
-        DbContext.Authors.Add(author);
-        await DbContext.SaveChangesAsync();
-
-        var book1 = new Book { Title = "Book A", Price = 10.99f };
-        book1.Authors.Add(author);
-        var book2 = new Book { Title = "Book B", Price = 10.99f };
-        book2.Authors.Add(author);
-        var book3 = new Book { Title = "Book C", Price = 10.99f };
-        book3.Authors.Add(author);
-
-        DbContext.Books.AddRange(book1, book2, book3);
-        await DbContext.SaveChangesAsync();
-
-        DbContext.Reviews.Add(new Review { Rating = 4, Book = book1 });
-        DbContext.Reviews.Add(new Review { Rating = 4, Book = book2 });
-        DbContext.Reviews.Add(new Review { Rating = 4, Book = book3 });
-        await DbContext.SaveChangesAsync();
-
-        var result = await bookService.GetTop10ByRatingAsync();
-
-        var booksList = result.ToList();
-        booksList.Should().HaveCount(3);
-        booksList.Should().OnlyContain(b => b.AverageRating == 4.0);
-    }
-
-    [Fact]
-    public async Task GetTop10ByRatingAsync_ShouldHandleBookWithMultipleReviews()
-    {
-        var author = new Author { Name = "Test Author", BirthYear = 1980 };
-        DbContext.Authors.Add(author);
-        await DbContext.SaveChangesAsync();
-
-        var book = new Book { Title = "Popular Book", Price = 10.99f };
-        book.Authors.Add(author);
-        DbContext.Books.Add(book);
-        await DbContext.SaveChangesAsync();
-
-        var ratings = new[] { 5, 5, 4, 4, 4, 3, 3, 2, 5, 4 };
-        foreach (var rating in ratings)
-        {
-            DbContext.Reviews.Add(new Review { Rating = rating, Book = book });
-        }
-        await DbContext.SaveChangesAsync();
-
-        var result = await bookService.GetTop10ByRatingAsync();
-
-        var booksList = result.ToList();
-        booksList.Should().ContainSingle();
-        // Average should be (5+5+4+4+4+3+3+2+5+4)/10 = 39/10 = 3.9
-        booksList[0].AverageRating.Should().Be(3.9);
+        booksResponse.Should().BeEmpty("Each test should start with a clean database");
+        authorsResponse.Should().BeEmpty("Each test should start with a clean database");
+        genresResponse.Should().BeEmpty("Each test should start with a clean database");
+        reviewsResponse.Should().BeEmpty("Each test should start with a clean database");
     }
 
     #endregion

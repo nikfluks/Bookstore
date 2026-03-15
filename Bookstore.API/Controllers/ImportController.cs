@@ -17,7 +17,7 @@ public class ImportController(IBookImportService bookImportService) : Controller
 {
     [HttpPost("trigger")]
     [Authorize(Roles = Roles.ReadWrite)]
-    public async Task<ActionResult<int>> TriggerImportAsync()
+    public async Task<ActionResult<int>> TriggerImport()
     {
         var importedCount = await bookImportService.ImportBooksAsync();
         return Ok(importedCount);

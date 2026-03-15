@@ -372,3 +372,8 @@ dotnet_diagnostic.MA0048.severity = silent
 # Migrations are by default created as Block scoped so following build would fail
 csharp_style_namespace_declarations = file_scoped:suggestion
 
+# Controllers
+
+# IDE1006: Naming rule violation - Controller methods intentionally don't end with Async
+[Bookstore.API/Controllers/*.cs]
+dotnet_diagnostic.IDE1006.severity = silent

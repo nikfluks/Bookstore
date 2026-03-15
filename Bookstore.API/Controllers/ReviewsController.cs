@@ -18,7 +18,7 @@ public class ReviewsController(IReviewService reviewService) : ControllerBase
 {
     [HttpGet]
     [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
-    public async Task<ActionResult<IEnumerable<ReviewResponse>>> GetAllAsync()
+    public async Task<ActionResult<IEnumerable<ReviewResponse>>> GetAll()
     {
         var result = await reviewService.GetAllAsync();
         return Ok(result);
@@ -26,7 +26,7 @@ public class ReviewsController(IReviewService reviewService) : ControllerBase
 
     [HttpGet("{id}")]
     [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
-    public async Task<ActionResult<ReviewResponse>> GetByIdAsync(int id)
+    public async Task<ActionResult<ReviewResponse>> GetById(int id)
     {
         var result = await reviewService.GetByIdAsync(id);
         return result is null
@@ -36,7 +36,7 @@ public class ReviewsController(IReviewService reviewService) : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = Roles.ReadWrite)]
-    public async Task<ActionResult<ReviewResponse>> CreateAsync(ReviewCreateRequest reviewCreate)
+    public async Task<ActionResult<ReviewResponse>> Create(ReviewCreateRequest reviewCreate)
     {
         var result = await reviewService.CreateAsync(reviewCreate);
 
@@ -48,12 +48,12 @@ public class ReviewsController(IReviewService reviewService) : ControllerBase
                 title: "Bad Request");
         }
 
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = result.Review!.Id }, result.Review);
+        return CreatedAtAction(nameof(GetById), new { id = result.Review!.Id }, result.Review);
     }
 
     [HttpPut("{id}")]
     [Authorize(Roles = Roles.ReadWrite)]
-    public async Task<ActionResult<ReviewResponse>> UpdateAsync(int id, ReviewUpdateRequest reviewUpdate)
+    public async Task<ActionResult<ReviewResponse>> Update(int id, ReviewUpdateRequest reviewUpdate)
     {
         var result = await reviewService.UpdateAsync(id, reviewUpdate);
         return result is null
@@ -63,7 +63,7 @@ public class ReviewsController(IReviewService reviewService) : ControllerBase
 
     [HttpDelete("{id}")]
     [Authorize(Roles = Roles.ReadWrite)]
-    public async Task<IActionResult> DeleteAsync(int id)
+    public async Task<IActionResult> Delete(int id)
     {
         return await reviewService.DeleteAsync(id)
             ? NoContent()

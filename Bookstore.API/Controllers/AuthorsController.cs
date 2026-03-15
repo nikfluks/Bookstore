@@ -18,7 +18,7 @@ public class AuthorsController(IAuthorService authorService) : ControllerBase
 {
     [HttpGet]
     [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
-    public async Task<ActionResult<IEnumerable<AuthorResponse>>> GetAllAsync()
+    public async Task<ActionResult<IEnumerable<AuthorResponse>>> GetAll()
     {
         var result = await authorService.GetAllAsync();
         return Ok(result);
@@ -26,7 +26,7 @@ public class AuthorsController(IAuthorService authorService) : ControllerBase
 
     [HttpGet("{id}")]
     [Authorize(Roles = $"{Roles.Read},{Roles.ReadWrite}")]
-    public async Task<ActionResult<AuthorResponse>> GetByIdAsync(int id)
+    public async Task<ActionResult<AuthorResponse>> GetById(int id)
     {
         var result = await authorService.GetByIdAsync(id);
         return result is null
@@ -36,15 +36,15 @@ public class AuthorsController(IAuthorService authorService) : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = Roles.ReadWrite)]
-    public async Task<ActionResult<AuthorResponse>> CreateAsync(AuthorCreateRequest authorCreate)
+    public async Task<ActionResult<AuthorResponse>> Create(AuthorCreateRequest authorCreate)
     {
         var result = await authorService.CreateAsync(authorCreate);
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = result.Id }, result);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     [HttpPut("{id}")]
     [Authorize(Roles = Roles.ReadWrite)]
-    public async Task<ActionResult<AuthorResponse>> UpdateAsync(int id, AuthorUpdateRequest authorUpdate)
+    public async Task<ActionResult<AuthorResponse>> Update(int id, AuthorUpdateRequest authorUpdate)
     {
         var result = await authorService.UpdateAsync(id, authorUpdate);
         return result is null
@@ -54,7 +54,7 @@ public class AuthorsController(IAuthorService authorService) : ControllerBase
 
     [HttpDelete("{id}")]
     [Authorize(Roles = Roles.ReadWrite)]
-    public async Task<IActionResult> DeleteAsync(int id)
+    public async Task<IActionResult> Delete(int id)
     {
         return await authorService.DeleteAsync(id)
             ? NoContent()

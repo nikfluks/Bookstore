@@ -33,6 +33,61 @@ public sealed class BookServiceTests : IDisposable
         }
     }
 
+    #region GetAllAsync Tests
+
+    [Fact]
+    public async Task GetAllAsync_ShouldReturnEmptyList_WhenNoBooksExist()
+    {
+        var result = await bookService.GetAllAsync(new PagedRequest());
+
+        result.Items.Should().BeEmpty();
+        result.TotalCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_ShouldReturnAllBooks()
+    {
+        var book1 = new Book { Id = 1, Title = "Book 1", Price = 10.99f };
+        var book2 = new Book { Id = 2, Title = "Book 2", Price = 15.99f };
+
+        dbContext.Books.AddRange(book1, book2);
+        await dbContext.SaveChangesAsync();
+
+        var result = await bookService.GetAllAsync(new PagedRequest());
+
+        var items = result.Items.ToList();
+        items.Should().HaveCount(2);
+        items[0].Title.Should().Be("Book 1");
+        items[0].Price.Should().Be(10.99f);
+        items[1].Title.Should().Be("Book 2");
+        items[1].Price.Should().Be(15.99f);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_ShouldReturnCorrectPage_WhenPaginated()
+    {
+        for (var i = 1; i <= 5; i++)
+        {
+            dbContext.Books.Add(new Book { Id = i, Title = $"Book {i}", Price = i * 10f });
+        }
+        await dbContext.SaveChangesAsync();
+
+        var result = await bookService.GetAllAsync(new PagedRequest(PageNumber: 2, PageSize: 2));
+
+        var items = result.Items.ToList();
+        items.Should().HaveCount(2);
+        items[0].Title.Should().Be("Book 3");
+        items[1].Title.Should().Be("Book 4");
+        result.TotalCount.Should().Be(5);
+        result.PageNumber.Should().Be(2);
+        result.PageSize.Should().Be(2);
+        result.TotalPages.Should().Be(3);
+        result.HasPreviousPage.Should().BeTrue();
+        result.HasNextPage.Should().BeTrue();
+    }
+
+    #endregion
+
     #region GetAllDetailedAsync Tests
 
     [Fact]
@@ -94,6 +149,33 @@ public sealed class BookServiceTests : IDisposable
         var booksList = result.Items.ToList();
         booksList.Should().ContainSingle();
         booksList[0].AverageRating.Should().Be(4.5);
+    }
+
+    [Fact]
+    public async Task GetAllDetailedAsync_ShouldReturnCorrectPage_WhenPaginated()
+    {
+        for (var i = 1; i <= 5; i++)
+        {
+            var author = new Author { Id = i, Name = $"Author {i}", BirthYear = 1980 + i };
+            var book = new Book { Id = i, Title = $"Book {i}", Price = i * 10f };
+            book.Authors.Add(author);
+            dbContext.Authors.Add(author);
+            dbContext.Books.Add(book);
+        }
+        await dbContext.SaveChangesAsync();
+
+        var result = await bookService.GetAllDetailedAsync(new PagedRequest(PageNumber: 2, PageSize: 2));
+
+        var items = result.Items.ToList();
+        items.Should().HaveCount(2);
+        items[0].Title.Should().Be("Book 3");
+        items[1].Title.Should().Be("Book 4");
+        result.TotalCount.Should().Be(5);
+        result.PageNumber.Should().Be(2);
+        result.PageSize.Should().Be(2);
+        result.TotalPages.Should().Be(3);
+        result.HasPreviousPage.Should().BeTrue();
+        result.HasNextPage.Should().BeTrue();
     }
 
     #endregion

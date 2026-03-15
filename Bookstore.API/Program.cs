@@ -84,3 +84,11 @@ finally
 {
     await Log.CloseAndFlushAsync();
 }
+
+/// <summary>
+/// Make the Program class non-static to allow integration testing with WebApplicationFactory<Program>
+/// </summary>
+public partial class Program
+{
+    protected Program() { }
+}
