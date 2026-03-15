@@ -354,7 +354,7 @@ dotnet_diagnostic.CA1812.severity = suggestion
 
 # Tests
 
-[Bookstore.Tests*/**/*.cs]
+[{Bookstore.Tests*/*.cs,Bookstore.Tests*/**/*.cs}]
 
 # CA1707: Identifiers should not contain underscores - acceptable for test methods
 dotnet_diagnostic.CA1707.severity = silent
