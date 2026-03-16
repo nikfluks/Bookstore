@@ -7,7 +7,6 @@ namespace Bookstore.Tests.Integration.Helpers;
 public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
 {
     private readonly BookstoreWebApplicationFactory _factory = new();
-    private bool _disposed;
 
     protected HttpClient Client { get; private set; } = null!;
 
@@ -24,18 +23,15 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
         await _factory.DisposeAsync();
     }
 
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!_disposed)
-        {
-            _disposed = true;
-        }
-    }
-
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        // The Dispose(bool) is left empty since all real cleanup is in DisposeAsync()
     }
 
     protected async Task AuthenticateAsAdminAsync()

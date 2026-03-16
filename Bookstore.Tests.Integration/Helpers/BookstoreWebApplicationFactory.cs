@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Bookstore.Tests.Integration.Helpers;
 
-internal sealed class BookstoreWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
+internal sealed class BookstoreWebApplicationFactory : WebApplicationFactory<Program>
 {
     private readonly string _databaseName = $"BookstoreTest_{Guid.NewGuid():N}";
 
@@ -28,12 +28,7 @@ internal sealed class BookstoreWebApplicationFactory : WebApplicationFactory<Pro
         builder.UseSetting("JwtSettings:ExpirationMinutes", "10");
     }
 
-    public Task InitializeAsync()
-    {
-        return Task.CompletedTask;
-    }
-
-    async Task IAsyncLifetime.DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
         using var scope = Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
