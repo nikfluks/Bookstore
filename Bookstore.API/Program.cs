@@ -1,5 +1,6 @@
 using Asp.Versioning.ApiExplorer;
 using Bookstore.API.Extensions;
+using Bookstore.API.Middleware;
 using Bookstore.Application.Extensions;
 using Bookstore.Application.Interfaces;
 using Bookstore.Infrastructure.Extensions;
@@ -42,6 +43,7 @@ try
 
     app.UseForwardedHeaders();
 
+    app.UseMiddleware<SecurityHeadersMiddleware>();
     app.UseExceptionHandler();
     app.UseStatusCodePages();
 
