@@ -22,7 +22,7 @@ try
             .ReadFrom.Configuration(context.Configuration);
     });
 
-    builder.Services.AddApiServices();
+    builder.Services.AddApiServices(builder.Configuration);
     builder.Services.AddJwtAuthentication(builder.Configuration);
     builder.Services.AddQuartzScheduling();
     builder.Services.AddRateLimiting();
@@ -48,6 +48,8 @@ try
     app.UseSerilogRequestLogging();
 
     app.UseHttpsRedirection();
+
+    app.UseCors("AllowFrontends");
 
     app.UseAuthentication();
     app.UseRateLimiter();

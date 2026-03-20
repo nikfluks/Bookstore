@@ -22,8 +22,23 @@ namespace Bookstore.API.Extensions;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddApiServices(this IServiceCollection services)
+    public static IServiceCollection AddApiServices(this IServiceCollection services, IConfiguration configuration)
     {
+        var allowedOrigins = configuration
+            .GetSection("CorsSettings:AllowedOrigins")
+            .Get<string[]>() ?? [];
+
+        services.AddCors(options =>
+        {
+            options.AddPolicy("AllowFrontends", policy =>
+            {
+                policy.WithOrigins(allowedOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials();
+            });
+        });
+
         services.AddControllers()
             .AddJsonOptions(options =>
             {
