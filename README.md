@@ -1,4 +1,4 @@
-﻿# Bookstore API
+# Bookstore API
 
 A RESTful API for managing a bookstore, providing a complete CRUD API (and more) for books, authors, genres and reviews.
 
@@ -14,10 +14,11 @@ This solution is built with .NET 9 and follows Clean Architecture principles:
 | `Bookstore.Infrastructure` | EF Core, database context, migrations, Identity seeding |
 | `Bookstore.Tests.Unit` | Unit tests (xUnit, in-memory database) |
 | `Bookstore.Tests.Integration` | Integration tests (xUnit, SQL Server) |
+| `Bookstore.Tests.Architecture` | Architecture tests (NetArchTest.Rules, Clean Architecture enforcement) |
 
 ### Key Features
 
-- **Authentication & Authorization** — JWT tokens with ASP.NET Core Identity (role-based: `Read`, `ReadWrite`)
+- **Authentication & Authorization** — JWT tokens with ASP.NET Core Identity (role-based), with **refresh token support** for secure session renewal
 - **Swagger Documentation** — comprehensive API documentation with example requests/responses
 - **API Versioning** — URL-segment versioning (`/api/v1/...`, `/api/v2/...`)
 - **Rate Limiting** — global fixed-window (60 req/min per IP) + per-user sliding-window (100 req/min per user) for authenticated endpoints
@@ -27,17 +28,17 @@ This solution is built with .NET 9 and follows Clean Architecture principles:
 - **Scheduled Import** — Quartz job imports books from a simulated third-party API every hour
 - **Structured Logging** — Serilog with console, debug, and file sinks
 - **Automatic Migrations** — EF Core migrations are applied on startup
-- **Unit & Integration Tests** — high test coverage for services and API endpoints
+- **Unit, Integration & Architecture Tests** — high test coverage for services, API endpoints, and Clean Architecture enforcement
 - **Error Handling** — global exception handling with consistent error responses in the [ProblemDetails](https://datatracker.ietf.org/doc/html/rfc7807) standard format
-- **Security Best Practices** — secure password policies, JWT signing, HTTPS enforcement
+- **Security Best Practices** — secure password policies, JWT signing, HTTPS enforcement, CORS, and XSS protection
 
 ## How to Test the API Using Swagger
 
 ### Prerequisites
 
-1. Visual Studio 2022
-2. SQL Server instance
-3. .NET 9 SDK
+1. Visual Studio 2022+ 
+2. SQL Server 2022+ instance
+3. .NET 9+ SDK
 
 ### Getting Started
 
@@ -51,7 +52,7 @@ This solution is built with .NET 9 and follows Clean Architecture principles:
    cd Bookstore.API
    dotnet user-secrets set "ConnectionStrings:BookstoreDB" "Data Source=.;Initial Catalog=Bookstore;Integrated Security=True;Persist Security Info=False;Pooling=False;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=True;Application Name=Bookstore.API;Command Timeout=30"
    dotnet user-secrets set "JwtSettings:Secret" "MySuperSecretKey.ThatIsVery.VeryLong#123456#"
-   ```
+   ```          
    Adjust the connection string to match your SQL Server instance. The JWT secret can be any string ≥ 32 characters.
 
 3. **Start the application**
@@ -63,10 +64,14 @@ This solution is built with .NET 9 and follows Clean Architecture principles:
 4. Navigate to Swagger UI
     - Default is `https://localhost:7146/swagger`, should start automatically
 
-### Register a New User
+### Register a New User or Use Seeded Users
 
-1. Expand the `POST /api/v1/Auth/register` endpoint
-2. Click **Try it out**
+You have two options for obtaining user accounts:
+
+#### Option 1: Register a New User via API
+
+1. Expand the `POST /api/v1/Auth/register` endpoint in Swagger UI.
+2. Click **Try it out**.
 3. Enter a username (min 3 chars) and password (min 8 chars, must include uppercase, lowercase, digit, and special character):
    ```json
    {
@@ -74,8 +79,21 @@ This solution is built with .NET 9 and follows Clean Architecture principles:
      "password": "MyPassword1!"
    }
    ```
-4. Click **Execute** — a `201 Created` response confirms registration
-5. New users are assigned the **Read** role by default
+4. Click **Execute** — a `201 Created` response confirms registration.
+5. New users are assigned the **Read** role by default.
+
+#### Option 2: Use Pre-Seeded Users (Development Only)
+
+When running in the development environment, the following users are automatically created:
+
+- **reader** (role: `Read`)
+  - Username: `reader`
+  - Password: `Reader123!`
+- **admin** (role: `ReadWrite`)
+  - Username: `admin`
+  - Password: `Admin123!`
+
+You can use these accounts to log in and test the API immediately, without registering a new user.
 
 ### Testing with Read-Only User
 
@@ -90,7 +108,7 @@ This solution is built with .NET 9 and follows Clean Architecture principles:
       }
       ```
     - Click **Execute**
-    - Copy the `token` value from the response
+    - Copy the `accessToken` value from the response
 
 2. **Authorize in Swagger**
     - Click the **Authorize** button (green lock icon at the top right)
@@ -123,7 +141,7 @@ This solution is built with .NET 9 and follows Clean Architecture principles:
       }
       ```
     - Click **Execute**
-    - Copy the `token` value from the response
+    - Copy the `accessToken` value from the response
 
 2. **Authorize in Swagger**
     - Click the **Authorize** button
@@ -138,6 +156,41 @@ This solution is built with .NET 9 and follows Clean Architecture principles:
     - Delete a book using `DELETE /api/v1/Books/{id}`
 
 ## API Usage & Configuration
+
+
+### Token Expiration & Refresh Token Flow
+
+- **Access tokens** expire after **10 minutes** by default (configurable via `JwtSettings:AccessTokenExpirationMinutes` in `appsettings.Development.json`).
+- **Refresh tokens** expire after **1 day** by default (configurable via `JwtSettings:RefreshTokenExpirationDays` in `appsettings.Development.json`).
+- When an access token expires, you will receive `401 Unauthorized` responses.
+- To renew your JWT access token without re-authenticating, use the `POST /api/v1/Auth/refresh` endpoint with your current access and refresh tokens:
+  ```json
+  {
+    "accessToken": "<your-access-token>",
+    "refreshToken": "<your-refresh-token>"
+  }
+  ```
+- The server verifies the refresh token is valid, unexpired, and not revoked:
+    - If valid, a new access/refresh token pair is returned.
+    - If the refresh token is expired or invalid, you must log in again.
+
+### Rate Limiting
+
+- **Global**: 60 requests per minute per IP address (fixed window)
+- **Authenticated endpoints**: 100 requests per minute per user (sliding window)
+- Exceeding the limit returns `429 Too Many Requests` with a `Retry-After` header
+
+### Manually Triggering the Scheduled Import Job
+
+The API includes a scheduled job that imports books from a simulated third-party source every hour.
+You can manually trigger this import:
+
+1. **Authenticate as Admin**
+2. Expand the `POST /api/v1/Import/trigger` endpoint
+3. Click **Try it out**
+4. Click **Execute**
+5. The response will show the number of books imported
+6. **Note**: The import process may take some time (usually around 1 minute) as it processes 100,000 books from the simulated API
 
 ### OData Queries (v2)
 
@@ -155,31 +208,6 @@ Search books by title, author, or genre with paging:
 GET /api/v2/Books/search?title=...&author=...&genre=...&page=1&pageSize=10
 ```
 
-### Manually Triggering the Scheduled Import Job
-
-The API includes a scheduled job that imports books from a simulated third-party source every hour.
-You can manually trigger this import:
-
-1. **Authenticate as Admin**
-2. Expand the `POST /api/v1/Import/trigger` endpoint
-3. Click **Try it out**
-4. Click **Execute**
-5. The response will show the number of books imported
-6. **Note**: The import process may take some time (usually around 1 minute) as it processes 100,000 books from the simulated API
-
-### Token Expiration
-
-- Tokens expire after **10 minutes** by default
-- When a token expires, you will receive `401 Unauthorized` responses
-- Simply repeat the login process to get a new token
-- Token expiration is configurable via `JwtSettings:ExpirationMinutes` in `appsettings.Development.json`
-
-### Rate Limiting
-
-- **Global**: 60 requests per minute per IP address (fixed window)
-- **Authenticated endpoints**: 100 requests per minute per user (sliding window)
-- Exceeding the limit returns `429 Too Many Requests` with a `Retry-After` header
-
 ## Technologies
 
 - **.NET 9**
@@ -191,4 +219,4 @@ You can manually trigger this import:
 - **Swagger/OpenAPI**
 - **Serilog**
 - **Quartz.NET**
-- **xUnit, Moq, FluentAssertions**
+- **xUnit, Moq, FluentAssertions, NetArchTest.Rules**
