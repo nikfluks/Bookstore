@@ -4,6 +4,7 @@ namespace Bookstore.Application.Interfaces;
 
 public interface IAuthService
 {
-    Task<AuthenticationResult> AuthenticateAsync(LoginRequest request);
+    Task<AuthenticationResult> LoginAsync(LoginRequest request);
+    Task<AuthenticationResult> RefreshTokenAsync(RefreshTokenRequest request);
     Task<RegisterResult> RegisterAsync(RegisterRequest request);
 }

@@ -10,6 +10,7 @@ public interface IAppDbContext
     DbSet<Author> Authors { get; set; }
     DbSet<Genre> Genres { get; set; }
     DbSet<Review> Reviews { get; set; }
+    DbSet<RefreshToken> RefreshTokens { get; set; }
 
     DatabaseFacade Database { get; }
 

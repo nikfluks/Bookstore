@@ -14,7 +14,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
     {
-        var result = await authService.AuthenticateAsync(request);
+        var result = await authService.LoginAsync(request);
 
         if (!result.IsAuthenticated)
         {
@@ -26,9 +26,11 @@ public class AuthController(IAuthService authService) : ControllerBase
 
         return Ok(new LoginResponse
         {
-            Token = result.Token!,
+            AccessToken = result.AccessToken!,
             Role = result.Role!,
-            ExpiresAtUtc = result.ExpiresAtUtc!.Value
+            AccessTokenExpiresAtUtc = result.AccessTokenExpiresAtUtc!.Value,
+            RefreshToken = result.RefreshToken!,
+            RefreshTokenExpiresAtUtc = result.RefreshTokenExpiresAtUtc!.Value
         });
     }
 
@@ -46,5 +48,30 @@ public class AuthController(IAuthService authService) : ControllerBase
         }
 
         return Created();
+    }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
+    {
+        var result = await authService.RefreshTokenAsync(request);
+
+        if (!result.IsAuthenticated)
+        {
+            return Problem(
+                detail: result.ErrorMessage,
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Bad Request");
+        }
+
+        var response = new RefreshTokenResponse
+        {
+            AccessToken = result.AccessToken!,
+            Role = result.Role!,
+            AccessTokenExpiresAtUtc = result.AccessTokenExpiresAtUtc!.Value,
+            RefreshToken = result.RefreshToken!,
+            RefreshTokenExpiresAtUtc = result.RefreshTokenExpiresAtUtc!.Value
+        };
+
+        return Ok(response);
     }
 }

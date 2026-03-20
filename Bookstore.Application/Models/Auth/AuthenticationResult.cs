@@ -3,19 +3,30 @@ namespace Bookstore.Application.Models.Auth;
 public class AuthenticationResult
 {
     public bool IsAuthenticated { get; set; }
-    public string? Token { get; set; }
+    public string? AccessToken { get; set; }
     public string? Role { get; set; }
-    public DateTime? ExpiresAtUtc { get; set; }
+    public DateTime? AccessTokenExpiresAtUtc { get; set; }
+    public string? RefreshToken { get; set; }
+    public DateTime? RefreshTokenExpiresAtUtc { get; set; }
     public string? ErrorMessage { get; set; }
 
-    public static AuthenticationResult Success(string token, string role, DateTime expiresAtUtc)
+    public static AuthenticationResult Success
+    (
+        string accessToken,
+        string role,
+        DateTime accessTokenExpiresAtUtc,
+        string refreshToken,
+        DateTime refreshTokenExpiresAtUtc
+    )
     {
         return new AuthenticationResult
         {
             IsAuthenticated = true,
-            Token = token,
+            AccessToken = accessToken,
             Role = role,
-            ExpiresAtUtc = expiresAtUtc
+            AccessTokenExpiresAtUtc = accessTokenExpiresAtUtc,
+            RefreshToken = refreshToken,
+            RefreshTokenExpiresAtUtc = refreshTokenExpiresAtUtc
         };
     }
 

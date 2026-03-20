@@ -25,7 +25,8 @@ internal sealed class BookstoreWebApplicationFactory : WebApplicationFactory<Pro
         builder.UseSetting("JwtSettings:Secret", TestJwtSecret);
         builder.UseSetting("JwtSettings:Issuer", TestJwtIssuer);
         builder.UseSetting("JwtSettings:Audience", TestJwtAudience);
-        builder.UseSetting("JwtSettings:ExpirationMinutes", "10");
+        builder.UseSetting("JwtSettings:AccessTokenExpirationMinutes", "10");
+        builder.UseSetting("JwtSettings:RefreshTokenExpirationDays", "1");
     }
 
     public override async ValueTask DisposeAsync()

@@ -89,6 +89,6 @@ public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
 
         var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>();
         Client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", loginResponse!.Token);
+            new AuthenticationHeaderValue("Bearer", loginResponse!.AccessToken);
     }
 }

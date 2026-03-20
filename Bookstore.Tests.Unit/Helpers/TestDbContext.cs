@@ -14,6 +14,7 @@ public class TestDbContext : DbContext, IAppDbContext
     public DbSet<Author> Authors { get; set; }
     public DbSet<Genre> Genres { get; set; }
     public DbSet<Review> Reviews { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -31,5 +32,15 @@ public class TestDbContext : DbContext, IAppDbContext
             .HasMany(b => b.Reviews)
             .WithOne(r => r.Book)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasOne(rt => rt.User)
+                .WithMany()
+                .HasForeignKey(rt => rt.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(rt => rt.Token).IsUnique();
+        });
     }
 }

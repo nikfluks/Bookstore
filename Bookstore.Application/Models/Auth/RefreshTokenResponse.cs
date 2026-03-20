@@ -1,6 +1,6 @@
 namespace Bookstore.Application.Models.Auth;
 
-public class LoginResponse
+public class RefreshTokenResponse
 {
     public required string AccessToken { get; set; }
     public required string RefreshToken { get; set; }
