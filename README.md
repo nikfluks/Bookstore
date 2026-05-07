@@ -30,7 +30,7 @@ This solution is built with .NET 9 and follows Clean Architecture principles:
 - **Automatic Migrations** — EF Core migrations are applied on startup
 - **Unit, Integration & Architecture Tests** — high test coverage for services, API endpoints, and Clean Architecture enforcement
 - **Error Handling** — global exception handling with consistent error responses in the [ProblemDetails](https://datatracker.ietf.org/doc/html/rfc7807) standard format
-- **Security Best Practices** — secure password policies, JWT signing, HTTPS enforcement, CORS, and XSS protection
+- **Security Best Practices** — secure password policies, JWT signing, HTTPS enforcement and CORS
 
 ## How to Test the API Using Swagger
 
